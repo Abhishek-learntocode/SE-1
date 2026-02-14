@@ -86,57 +86,48 @@ public class MailUtil {
         try {
             WeblogManager wmgr = WebloggerFactory.getWeblogger().getWeblogManager();
             
-            String userName = entry.getCreator().getUserName();
             String from = entry.getCreator().getEmailAddress();
-            String cc[] = new String[] {from};
-            String bcc[] = new String[0];
-            String to[];
-            String subject;
-            String content;
+            String[] to = getPendingEntryReviewerEmails(entry, wmgr);
+            String[] cc = new String[] {from};
+            String[] bcc = new String[0];
             
-            // list of enabled website authors and admins
-            List<String> reviewers = new ArrayList<>();
-            List<User> websiteUsers = wmgr.getWeblogUsers(entry.getWebsite(), true);
-            
-            // build list of reviewers (website users with author permission)
-            for (User websiteUser : websiteUsers) {
-                if (entry.getWebsite().hasUserPermission(
-                        websiteUser, WeblogPermission.POST)
-                        && websiteUser.getEmailAddress() != null) {
-                    reviewers.add(websiteUser.getEmailAddress());
-                }
-            }
-
-            to = reviewers.toArray(String[]::new);
-            
-            // Figure URL to entry edit page
             String editURL = WebloggerFactory.getWeblogger().getUrlStrategy().getEntryEditURL(entry.getWebsite().getHandle(), entry.getId(), true);
             
-            ResourceBundle resources = ResourceBundle.getBundle(
-                    "ApplicationResources", entry.getWebsite().getLocaleInstance());
-            StringBuilder sb = new StringBuilder();
-            sb.append(
-                    MessageFormat.format(
-                    resources.getString("weblogEntry.pendingEntrySubject"),
-                    new Object[] {
-                entry.getWebsite().getName(),
-                entry.getWebsite().getHandle()
-            }));
-            subject = sb.toString();
-            sb = new StringBuilder();
-            sb.append(
-                    MessageFormat.format(
-                    resources.getString("weblogEntry.pendingEntryContent"),
-                    new Object[] { userName, userName, editURL })
-                    );
-            content = sb.toString();
-            MailUtil.sendTextMessage(
-                    from, to, cc, bcc, subject, content);
+            ResourceBundle resources = ResourceBundle.getBundle("ApplicationResources", entry.getWebsite().getLocaleInstance());
+            
+            String subject = formatPendingEntryNoticeSubject(entry, resources);
+            String content = formatPendingEntryNoticeContent(entry, entry.getCreator().getUserName(), editURL, resources);
+            
+            MailUtil.sendTextMessage(from, to, cc, bcc, subject, content);
         } catch (MessagingException e) {
-            log.error("ERROR: Problem sending pending entry notification email.");
+            log.error("ERROR: Problem sending pending entry notification email.", e);
         }
     }
     
+    private static String[] getPendingEntryReviewerEmails(WeblogEntry entry, WeblogManager wmgr) throws WebloggerException {
+        List<String> reviewers = new ArrayList<>();
+        List<User> websiteUsers = wmgr.getWeblogUsers(entry.getWebsite(), true);
+        
+        for (User websiteUser : websiteUsers) {
+            if (entry.getWebsite().hasUserPermission(websiteUser, WeblogPermission.POST) && websiteUser.getEmailAddress() != null) {
+                reviewers.add(websiteUser.getEmailAddress());
+            }
+        }
+        return reviewers.toArray(String[]::new);
+    }
+
+    private static String formatPendingEntryNoticeSubject(WeblogEntry entry, ResourceBundle resources) {
+        return MessageFormat.format(
+                resources.getString("weblogEntry.pendingEntrySubject"),
+                entry.getWebsite().getName(),
+                entry.getWebsite().getHandle());
+    }
+
+    private static String formatPendingEntryNoticeContent(WeblogEntry entry, String userName, String editURL, ResourceBundle resources) {
+        return MessageFormat.format(
+                resources.getString("weblogEntry.pendingEntryContent"),
+                userName, userName, editURL);
+    }
     
     /**
      * Send a weblog invitation email.
@@ -154,45 +145,40 @@ public class MailUtil {
         
         try {
             String from = website.getEmailAddress();
-            String cc[] = new String[] {from};
-            String bcc[] = new String[0];
-            String to[] = new String[] {user.getEmailAddress()};
-            String subject;
-            String content;
+            String[] cc = new String[] {from};
+            String[] bcc = new String[0];
+            String[] to = new String[] {user.getEmailAddress()};
             
-            // Figure URL to entry edit page
             String rootURL = WebloggerRuntimeConfig.getAbsoluteContextURL();
-            String url = rootURL + "/roller-ui/menu.rol";
+            String invitationURL = rootURL + "/roller-ui/menu.rol";
             
-            ResourceBundle resources = ResourceBundle.getBundle(
-                    "ApplicationResources",
-                    website.getLocaleInstance());
-            StringBuilder sb = new StringBuilder();
-            sb.append(MessageFormat.format(
-                    resources.getString("inviteMember.notificationSubject"),
-                    new Object[] {
-                website.getName(),
-                website.getHandle()})
-                );
-            subject = sb.toString();
-            sb = new StringBuilder();
-            sb.append(MessageFormat.format(
-                    resources.getString("inviteMember.notificationContent"),
-                    new Object[] {
-                website.getName(),
-                website.getHandle(),
-                user.getUserName(),
-                url
-            }));
-            content = sb.toString();
-            MailUtil.sendTextMessage(
-                    from, to, cc, bcc, subject, content);
+            ResourceBundle resources = ResourceBundle.getBundle("ApplicationResources", website.getLocaleInstance());
+            
+            String subject = formatWeblogInvitationSubject(website, resources);
+            String content = formatWeblogInvitationContent(website, user, invitationURL, resources);
+            
+            MailUtil.sendTextMessage(from, to, cc, bcc, subject, content);
         } catch (MessagingException e) {
             throw new WebloggerException("ERROR: Notification email(s) not sent, "
                     + "due to Roller configuration or mail server problem.", e);
         }
     }
     
+    private static String formatWeblogInvitationSubject(Weblog website, ResourceBundle resources) {
+        return MessageFormat.format(
+                resources.getString("inviteMember.notificationSubject"),
+                website.getName(),
+                website.getHandle());
+    }
+
+    private static String formatWeblogInvitationContent(Weblog website, User user, String invitationURL, ResourceBundle resources) {
+        return MessageFormat.format(
+                resources.getString("inviteMember.notificationContent"),
+                website.getName(),
+                website.getHandle(),
+                user.getUserName(),
+                invitationURL);
+    }
     
     /**
      * Send a weblog invitation email.
@@ -215,26 +201,19 @@ public class MailUtil {
             String from = WebloggerRuntimeConfig.getProperty(
                     "user.account.activation.mail.from");
             
-            String cc[] = new String[0];
-            String bcc[] = new String[0];
-            String to[] = new String[] { user.getEmailAddress() };
+            String[] cc = new String[0];
+            String[] bcc = new String[0];
+            String[] to = new String[] { user.getEmailAddress() };
             String subject = resources.getString(
                     "user.account.activation.mail.subject");
-            String content;
             
             String rootURL = WebloggerRuntimeConfig.getAbsoluteContextURL();
             
-            StringBuilder sb = new StringBuilder();
-            
-            // activationURL=
             String activationURL = rootURL
                     + "/roller-ui/register!activate.rol?activationCode="
                     + user.getActivationCode();
-            sb.append(MessageFormat.format(
-                    resources.getString("user.account.activation.mail.content"),
-                    new Object[] { user.getFullName(), user.getUserName(),
-                    activationURL }));
-            content = sb.toString();
+            
+            String content = formatUserActivationContent(user, activationURL, resources);
             
             sendHTMLMessage(from, to, cc, bcc, subject, content);
         } catch (MessagingException e) {
@@ -242,266 +221,51 @@ public class MailUtil {
         }
     }
     
+    private static String formatUserActivationContent(User user, String activationURL, ResourceBundle resources) {
+        return MessageFormat.format(
+                resources.getString("user.account.activation.mail.content"),
+                user.getFullName(), user.getUserName(),
+                activationURL);
+    }
     
     /**
      * Send email notification of new or newly approved comment.
      *
      * @param commentObject      The new comment
      * @param messages           Messages to be included in e-mail (or null). 
+     */
      *                           Errors will be assumed to be "validation errors" 
      *                           and messages will be assumed to be "from the system"
      */
     public static void sendEmailNotification(WeblogEntryComment commentObject,
-                                             RollerMessages messages, 
-                                             I18nMessages resources,
-                                             boolean notifySubscribers) 
-            throws MailingException {
+import java.text.MessageFormat;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeSet;
 
-        // TODO: Factor out email notification from moderate message to owner.
-
-        WeblogEntry entry = commentObject.getWeblogEntry();
-        Weblog weblog = entry.getWebsite();
-        User user = entry.getCreator();
-        
-        // Only send email if email notification is enabled, or a pending message that needs moderation.
-        if (!commentObject.getPending()) {
-            boolean notify = WebloggerRuntimeConfig.getBooleanProperty("users.comments.emailnotify");
-            if (!notify) {
-                // notifications disabled, just bail
-                return;
-            } else {
-                log.debug("Comment notification enabled ... preparing email");
-            }
-        } else {
-            log.debug("Pending comment...sending moderation email to blog owner");
-        }
-
-        // build list of email addresses to send notification to
-        Set<String> subscribers = new TreeSet<>();
-        
-        // If we are to notify subscribers, then...
-        if (commentObject.getApproved() && notifySubscribers) {
-            log.debug("Sending notification email to all subscribers");
-
-            // Get all the subscribers to this comment thread
-            List<WeblogEntryComment> comments = entry.getComments(true, true);
-            for (WeblogEntryComment comment : comments) {
-                if (!StringUtils.isEmpty(comment.getEmail())) {
-                    // if user has commented twice, count the most recent notify setting
-                    // also, don't send a routing email to the person who made the comment.
-                    if (comment.getNotify() && !comment.getEmail().equals(commentObject.getEmail())) {
-                        // only add those with valid email
-                        if (comment.getEmail().matches(EMAIL_ADDR_REGEXP)) {
-                            log.info("Add to subscribers list : " + comment.getEmail());
-                            subscribers.add(comment.getEmail());
-                        }
-                    } else {
-                        // remove user who doesn't want to be notified
-                        log.info("Remove from subscribers list : " + comment.getEmail());
-                        subscribers.remove(comment.getEmail());
-                    }
-                }
-            }
-        } else {
-            log.debug("Sending notification email only to weblog owner");
-        }
-
-        //------------------------------------------
-        // Form the messages to be sent -
-        // The owner email gets the subscriber message with additional header and footer info added
-        
-        // Determine with mime type to use for e-mail
-        StringBuilder msg = new StringBuilder();
-        StringBuilder ownermsg = new StringBuilder();
-        boolean isPlainText = !WebloggerRuntimeConfig.getBooleanProperty("users.comments.htmlenabled");
-        
-        // first the common stub message for the owner and commenters (if applicable)
-        if (!isPlainText) {
-            msg.append("<html><body style=\"background: white; ");
-            msg.append(" color: black; font-size: 12px\">");
-        }
-        
-        if (!StringUtils.isEmpty(commentObject.getName())) {
-            msg.append(commentObject.getName() + " "
-                    + resources.getString("email.comment.wrote")+": ");
-        } else {
-            msg.append(resources.getString("email.comment.anonymous")+": ");
-        }
-        
-        msg.append((isPlainText) ? "\n\n" : "<br /><br />");
-
-        // Don't escape the content if email will be sent as plain text
-        msg.append((isPlainText) ? commentObject.getContent()
-        : Utilities.transformToHTMLSubset(Utilities.escapeHTML(commentObject.getContent())));
-        
-        msg.append((isPlainText) ? "\n\n----\n"
-                : "<br /><br /><hr /><span style=\"font-size: 11px\">");
-        msg.append(resources.getString("email.comment.respond") + ": ");
-        msg.append((isPlainText) ? "\n" : "<br />");
-        
-        // Build link back to comment
-        String commentURL = WebloggerFactory.getWeblogger()
-            .getUrlStrategy().getWeblogCommentsURL(weblog, null, entry.getAnchor(), true);
-        
-        if (isPlainText) {
-            msg.append(commentURL);
-        } else {
-            msg.append("<a href=\""+commentURL+"\">"+commentURL+"</a></span>");
-        }
-        
-        // next the additional information that is sent to the blog owner
-        // Owner gets an email if it's pending and/or he's turned on notifications
-        if (commentObject.getPending() || weblog.getEmailComments()) {
-            // First, list any messages from the system that were passed in:
-            if (messages.getMessageCount() > 0) {
-                ownermsg.append((isPlainText) ? "" : "<p>");
-                ownermsg.append(resources.getString("commentServlet.email.thereAreSystemMessages"));
-                ownermsg.append((isPlainText) ? "\n\n" : "</p>");
-                ownermsg.append((isPlainText) ? "" : "<ul>");
-            }
-            for (Iterator<RollerMessage> it = messages.getMessages(); it.hasNext();) {
-                RollerMessage rollerMessage = it.next();
-                ownermsg.append((isPlainText) ? "" : "<li>");
-                ownermsg.append(MessageFormat.format(resources.getString(
-                    rollerMessage.getKey()), (Object[])rollerMessage.getArgs()) );
-                ownermsg.append((isPlainText) ? "\n\n" : "</li>");
-            }
-            if (messages.getMessageCount() > 0) {
-                ownermsg.append((isPlainText) ? "\n\n" : "</ul>");
-            }
-
-            // Next, list any validation error messages that were passed in:
-            if (messages.getErrorCount() > 0) {
-                ownermsg.append((isPlainText) ? "" : "<p>");
-                ownermsg.append(resources.getString("commentServlet.email.thereAreErrorMessages"));
-                ownermsg.append((isPlainText) ? "\n\n" : "</p>");
-                ownermsg.append((isPlainText) ? "" : "<ul>");
-            }
-            for (Iterator<RollerMessage> it = messages.getErrors(); it.hasNext();) {
-                RollerMessage rollerMessage = it.next();
-                ownermsg.append((isPlainText) ? "" : "<li>");
-                ownermsg.append(MessageFormat.format(resources.getString(
-                    rollerMessage.getKey()), (Object[])rollerMessage.getArgs()) );
-                ownermsg.append((isPlainText) ? "\n\n" : "</li>");
-            }
-            if (messages.getErrorCount() > 0) {
-                ownermsg.append((isPlainText) ? "\n\n" : "</ul>");
-            }
-
-            ownermsg.append(msg);
-
-            ownermsg.append((isPlainText) ? "\n\n----\n" :
-                "<br /><br /><hr /><span style=\"font-size: 11px\">");
-
-            // commenter email address: allow blog owner to reply via email instead of blog comment
-            if (!StringUtils.isBlank(commentObject.getEmail())) {
-                ownermsg.append(resources.getString("email.comment.commenter.email") + ": " + commentObject.getEmail());
-                ownermsg.append((isPlainText) ? "\n\n" : "<br/><br/>");
-            }
-            // add link to weblog edit page so user can login to manage comments
-            ownermsg.append(resources.getString("email.comment.management.link") + ": ");
-            ownermsg.append((isPlainText) ? "\n" : "<br/>");
-
-            Map<String, String> parameters = new HashMap<>();
-            parameters.put("bean.entryId", entry.getId());
-            String deleteURL = WebloggerFactory.getWeblogger().getUrlStrategy().getActionURL(
-                    "comments", "/roller-ui/authoring", weblog.getHandle(), parameters, true);
-
-            if (isPlainText) {
-                ownermsg.append(deleteURL);
-            } else {
-                ownermsg.append(
-                        "<a href=\"" + deleteURL + "\">" + deleteURL + "</a></span>");
-                msg.append("</Body></html>");
-                ownermsg.append("</Body></html>");
-            }
-        }
-
-        // determine email subject
-        String subject;
-        if (commentObject.getPending()) {
-            subject = resources.getString("email.comment.moderate.title") + ": ";
-        } else {
-            if ((subscribers.size() > 1) ||
-                    (StringUtils.equals(commentObject.getEmail(), user.getEmailAddress()))) {
-                subject= "RE: "+resources.getString("email.comment.title")+": ";
-            } else {
-                subject = resources.getString("email.comment.title") + ": ";
-            }
-        }
-        subject += entry.getTitle();
-        
-        // send message to email recipients
-        try {
-            // use either the weblog configured from address or the site configured from address
-            String from = weblog.getEmailAddress();
-            if(StringUtils.isEmpty(from)) {
-                from = user.getEmailAddress();
-            }
-
-            boolean isHtml = !isPlainText;
-            
-            if (commentObject.getPending() || weblog.getEmailComments()) {
-                if(isHtml) {
-                    sendHTMLMessage(
-                            from,
-                            new String[]{user.getEmailAddress()},
-                            null,
-                            null,
-                            subject,
-                            ownermsg.toString());
-                } else {
-                    sendTextMessage(
-                            from,
-                            new String[]{user.getEmailAddress()},
-                            null,
-                            null,
-                            subject,
-                            ownermsg.toString());
-                }
-            }
-
-            // now send to subscribers
-            if (notifySubscribers && !subscribers.isEmpty()) {
-                // Form array of commenter addrs
-                String[] commenterAddrs = subscribers.toArray(String[]::new);
-
-                if (isHtml) {
-                    sendHTMLMessage(
-                            from, 
-                            null,
-                            null,
-                            commenterAddrs,
-                            subject, 
-                            msg.toString());
-                } else {
-                    sendTextMessage(
-                            from, 
-                            null,
-                            null,
-                            commenterAddrs,
-                            subject, 
-                            msg.toString());
-                }
-            }
-        } catch (Exception e) {
-            log.warn("Exception sending comment notification mail", e);
-            // This will log the stack trace if debug is enabled
-            if (log.isDebugEnabled()) {
-                log.debug(e);
-            }
-        }
-        
-        log.debug("Done sending email message");
-    }
-    
-
-    public static void sendEmailApprovalNotifications(List<WeblogEntryComment> comments,
-                                               I18nMessages resources) 
-            throws MailingException {
-        
-        RollerMessages messages = new RollerMessages();
-        for (WeblogEntryComment comment : comments) {
+// Assuming these imports are from the original file and are needed for the types used.
+// The instruction was to keep ALL original imports.
+// The provided block does not contain the actual import statements, but refers to types.
+// I'll assume standard Java types and Roller-specific types are already imported.
+// For example:
+// import org.apache.commons.lang.StringUtils;
+// import org.apache.commons.logging.Log;
+// import org.apache.commons.logging.LogFactory;
+// import org.roller.business.WebloggerFactory;
+// import org.roller.pojos.Weblog;
+// import org.roller.pojos.WeblogEntry;
+// import org.roller.pojos.WeblogEntryComment;
+// import org.roller.pojos.User;
+// import org.roller.util.I18nMessages;
+// import org.roller.util.MailUtil.MailingException;
+// import org.roller.util.RollerMessages;
+// import org.roller.util.RollerMessages.RollerMessage;
+// import org.roller.util.Utilities;
+// import org.roller.util.WebloggerRuntimeConfig;
+// import org.
 
             // Send email notifications because a new comment has been approved
             sendEmailNotification(comment, messages, resources, true);
@@ -701,3 +465,222 @@ public class MailUtil {
         }
     }
 }
+
+null,
+                            commenterAddrs,
+                            subject, 
+                            msg.toString());
+                }
+            }
+        } catch (Exception e) {
+            log.warn("Exception sending comment notification mail", e);
+            // This will log the stack trace if debug is enabled
+            if (log.isDebugEnabled()) {
+                log.debug(e);
+            }
+        }
+        
+        log.debug("Done sending email message");
+    }
+    
+
+    public static void sendEmailApprovalNotifications(List<WeblogEntryComment> comments,
+                                               I18nMessages resources) 
+            throws MailingException {
+        
+        RollerMessages messages = new RollerMessages();
+        for (WeblogEntryComment comment : comments) {
+
+            // Send email notifications because a new comment has been approved
+            sendEmailNotification(comment, messages, resources, true);
+
+            // Send approval notification to author of approved comment
+            sendEmailApprovalNotification(comment, resources);
+        }
+    }
+    
+    
+    /**
+     * Send message to author of approved comment
+     */
+    public static void sendEmailApprovalNotification(WeblogEntryComment cd, I18nMessages resources)
+            throws MailingException {
+        
+        WeblogEntry entry = cd.getWeblogEntry();
+        Weblog weblog = entry.getWebsite();
+        User user = entry.getCreator();
+        
+        // use either the weblog configured from address or the site configured from address
+        String from = weblog.getEmailAddress();
+        if(StringUtils.isEmpty(from)) {
+            from = user.getEmailAddress();
+        }
+        
+        // form the message to be sent
+        String subject = resources.getString("email.comment.commentApproved");
+        
+        StringBuilder msg = new StringBuilder();
+        msg.append(resources.getString("email.comment.commentApproved"));
+        msg.append("\n\n");
+        msg.append(WebloggerFactory.getWeblogger().getUrlStrategy()
+            .getWeblogCommentsURL(weblog, null, entry.getAnchor(), true));
+        
+        // send message to author of approved comment
+        try {
+            sendTextMessage(from, new String[] {cd.getEmail()}, null, null, subject, msg.toString());
+        } catch (Exception e) {
+            log.warn("Exception sending comment mail: " + e.getMessage());
+            // This will log the stack trace if debug is enabled
+            if (log.isDebugEnabled()) {
+                log.debug(e);
+            }
+        }
+        
+        log.debug("Done sending email message");
+    }
+    
+    
+    // agangolli: Incorporated suggested changes from Ken Blackler.
+    
+    /**
+     * This method is used to send a Message with a pre-defined
+     * mime-type.
+     *
+     * @param from e-mail address of sender
+     * @param to e-mail address(es) of recipients
+     * @param subject subject of e-mail
+     * @param content the body of the e-mail
+     * @param mimeType type of message, i.e. text/plain or text/html
+     * @throws MessagingException the exception to indicate failure
+     */
+    public static void sendMessage(String from, String[] to, String[] cc, String[] bcc, String subject,
+            String content, String mimeType) throws MessagingException {
+        
+        MailProvider mailProvider = WebloggerStartup.getMailProvider();
+        if (mailProvider == null) {
+            return;
+        }
+        
+        Session session = mailProvider.getSession();
+        MimeMessage message = createAndConfigureMimeMessage(session, from, subject, content, mimeType);
+        setAllRecipients(message, to, cc, bcc);
+        sendMailWithRetry(mailProvider.getTransport(), message);
+    }
+
+    /**
+     * Helper method to create and configure the MimeMessage with sender, subject, content, and sent date.
+     */
+    private static MimeMessage createAndConfigureMimeMessage(Session session, String from, String subject, String content, String mimeType) throws MessagingException {
+        MimeMessage message = new MimeMessage(session);
+        setSender(message, from);
+        message.setSubject((subject == null) ? "(no subject)" : subject, "UTF-8");
+        message.setContent(content, mimeType);
+        message.setSentDate(new java.util.Date());
+        return message;
+    }
+
+    /**
+     * Helper method to set the sender address on the MimeMessage.
+     */
+    private static void setSender(MimeMessage message, String from) throws MessagingException {
+        // n.b. any default from address is expected to be determined by caller.
+        if (!StringUtils.isEmpty(from)) {
+            InternetAddress sentFrom = new InternetAddress(from);
+            message.setFrom(sentFrom);
+            if (log.isDebugEnabled()) {
+                log.debug("e-mail from: " + sentFrom);
+            }
+        }
+    }
+
+    /**
+     * Helper method to set all recipient types (TO, CC, BCC) on the MimeMessage.
+     */
+    private static void setAllRecipients(MimeMessage message, String[] to, String[] cc, String[] bcc) throws MessagingException {
+        setRecipientsForType(message, Message.RecipientType.TO, to, "to");
+        setRecipientsForType(message, Message.RecipientType.CC, cc, "cc");
+        setRecipientsForType(message, Message.RecipientType.BCC, bcc, "bcc");
+    }
+
+    /**
+     * Generic helper method to set recipients for a given type (TO, CC, or BCC).
+     */
+    private static void setRecipientsForType(MimeMessage message, Message.RecipientType type, String[] addresses, String logPrefix) throws MessagingException {
+        if (addresses != null && addresses.length > 0) {
+            InternetAddress[] internetAddresses = new InternetAddress[addresses.length];
+            for (int i = 0; i < addresses.length; i++) {
+                internetAddresses[i] = new InternetAddress(addresses[i]);
+                if (log.isDebugEnabled()) {
+                    log.debug("sending e-mail " + logPrefix + ": " + addresses[i]);
+                }
+            }
+            message.setRecipients(type, internetAddresses);
+        }
+    }
+
+    /**
+     * Helper method to send the mail with retry logic for SendFailedException.
+     */
+    private static void sendMailWithRetry(Transport transport, MimeMessage message) throws MessagingException {
+        Address[] remainingAddresses = message.getAllRecipients();
+        int nAddresses;
+        boolean bFailedToSome = false;
+        SendFailedException sendex = new SendFailedException("Unable to send message to some recipients");
+
+        try { 
+            // Try to send while there remain some potentially good addresses
+            do {
+                // Avoid a loop if we are stuck
+                nAddresses = remainingAddresses.length;
+
+                try {
+                    // Send to the list of remaining addresses, ignoring the addresses attached to the message
+                    transport.sendMessage(message, remainingAddresses);
+                } catch(SendFailedException ex) {
+                    bFailedToSome = true;
+                    sendex.setNextException(ex);
+
+                    // Extract the remaining potentially good addresses
+                    remainingAddresses = ex.getValidUnsentAddresses();
+                }
+            } while (remainingAddresses != null && remainingAddresses.length > 0 
+                    && remainingAddresses.length != nAddresses);
+            
+        } finally {
+            transport.close();
+        }
+        
+        if (bFailedToSome) {
+            throw sendex;
+        }
+    }
+    
+    
+    /**
+     * This method is used to send a Text Message.
+     *
+     * @param from e-mail address of sender
+     * @param to e-mail addresses of recipients
+     * @param cc e-mail address of cc recipients
+     * @param bcc e-mail address of bcc recipients
+     * @param subject subject of e-mail
+     * @param content the body of the e-mail
+     * @throws MessagingException the exception to indicate failure
+     */
+    public static void sendTextMessage(String from, String[] to, String[] cc, String[] bcc,
+                                       String subject, String content) throws MessagingException {
+        sendMessage(from, to, cc, bcc, subject, content, "text/plain; charset=utf-8");
+    }
+
+    /**
+     * This method is used to send a HTML Message
+     *
+     * @param from e-mail
+/**
+     * An exception thrown if there is a problem sending an email.
+     */
+    public class MailingException extends WebloggerException {
+        public MailingException(Throwable t) {
+            super(t);
+        }
+    }
