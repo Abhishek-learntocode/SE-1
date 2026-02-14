@@ -1,0 +1,309 @@
+@startuml Weblog_and_Content_Subsystem
+
+' ============================================================
+' Weblog and Content Subsystem - Apache Roller
+' ============================================================
+
+' Manager Interfaces
+interface WeblogManager <<interface>> {
+    + addWeblog(weblog: Weblog): void
+    + saveWeblog(weblog: Weblog): void
+    + removeWeblog(weblog: Weblog): void
+    + getWeblog(id: String): Weblog
+    + getWeblogByHandle(handle: String): Weblog
+    + getWeblogByHandle(handle: String, enabled: Boolean): Weblog
+    + getWeblogs(enabled: Boolean, active: Boolean, startDate: Date, endDate: Date, offset: int, length: int): List<Weblog>
+    + getWeblogCount(): long
+}
+
+interface WeblogEntryManager <<interface>> {
+    + saveWeblogEntry(entry: WeblogEntry): void
+    + removeWeblogEntry(entry: WeblogEntry): void
+    + getWeblogEntry(id: String): WeblogEntry
+    + getWeblogEntryByAnchor(weblog: Weblog, anchor: String): WeblogEntry
+    + getWeblogEntries(criteria: WeblogEntrySearchCriteria): List<WeblogEntry>
+    + getWeblogEntryObjectMap(criteria: WeblogEntrySearchCriteria): Map<Date, List<WeblogEntry>>
+    + getWeblogEntryStringMap(criteria: WeblogEntrySearchCriteria): Map<Date, String>
+    + saveWeblogCategory(category: WeblogCategory): void
+    + removeWeblogCategory(category: WeblogCategory): void
+    + getWeblogCategory(id: String): WeblogCategory
+    + saveComment(comment: WeblogEntryComment): void
+    + removeComment(comment: WeblogEntryComment): void
+    + getComment(id: String): WeblogEntryComment
+    + getComments(criteria: CommentSearchCriteria): List<WeblogEntryComment>
+    + getEntryCount(): long
+    + getCommentCount(): long
+}
+
+' Domain Model Classes
+class Weblog {
+    - id: String
+    - handle: String
+    - name: String
+    - tagline: String
+    - enableBloggerApi: Boolean
+    - editorPage: String
+    - bannedwordslist: String
+    - allowComments: Boolean
+    - emailComments: Boolean
+    - emailAddress: String
+    - editorTheme: String
+    - locale: String
+    - timeZone: String
+    - defaultPlugins: String
+    - visible: Boolean
+    - active: Boolean
+    - dateCreated: Date
+    - defaultAllowComments: Boolean
+    - defaultCommentDays: int
+    - moderateComments: Boolean
+    - entryDisplayCount: int
+    - lastModified: Date
+    - enableMultiLang: boolean
+    - showAllLangs: boolean
+    - iconPath: String
+    - about: String
+    - creator: String
+    - analyticsCode: String
+    
+    + getId(): String
+    + getHandle(): String
+    + getName(): String
+    + getTagline(): String
+    + getCreator(): String
+    + getLocale(): String
+    + getTimeZone(): String
+    + getEmailAddress(): String
+    + isEnabled(): Boolean
+    + isActive(): Boolean
+    + getDateCreated(): Date
+    + getLastModified(): Date
+    + getAbsoluteURL(): String
+    + hasEntries(): boolean
+}
+
+class WeblogEntry {
+    - id: String
+    - title: String
+    - link: String
+    - summary: String
+    - text: String
+    - contentType: String
+    - contentSrc: String
+    - anchor: String
+    - pubTime: Timestamp
+    - updateTime: Timestamp
+    - plugins: String
+    - allowComments: Boolean
+    - commentDays: Integer
+    - rightToLeft: Boolean
+    - pinnedToMain: Boolean
+    - status: PubStatus
+    - locale: String
+    - creatorUserName: String
+    - searchDescription: String
+    - refreshAggregates: Boolean
+    
+    + getId(): String
+    + getTitle(): String
+    + getText(): String
+    + getSummary(): String
+    + getAnchor(): String
+    + getPubTime(): Timestamp
+    + getUpdateTime(): Timestamp
+    + getStatus(): PubStatus
+    + getWebsite(): Weblog
+    + getCategory(): WeblogCategory
+    + getCreatorUserName(): String
+    + getPermalink(): String
+    + getDisplayTitle(): String
+    + getAllowComments(): Boolean
+    + getCommentDays(): Integer
+    + isPinnedToMain(): Boolean
+}
+
+enum PubStatus <<enumeration>> {
+    DRAFT
+    PUBLISHED
+    PENDING
+    SCHEDULED
+}
+
+class WeblogCategory {
+    - id: String
+    - name: String
+    - description: String
+    - image: String
+    - position: Integer
+    
+    + getId(): String
+    + getName(): String
+    + getDescription(): String
+    + getImage(): String
+    + getWeblog(): Weblog
+    + getPosition(): Integer
+}
+
+class WeblogEntryComment {
+    - id: String
+    - name: String
+    - email: String
+    - url: String
+    - content: String
+    - postTime: Timestamp
+    - status: ApprovalStatus
+    - notify: Boolean
+    - remoteHost: String
+    - referrer: String
+    - userAgent: String
+    - contentType: String
+    
+    + getId(): String
+    + getName(): String
+    + getEmail(): String
+    + getUrl(): String
+    + getContent(): String
+    + getPostTime(): Timestamp
+    + getStatus(): ApprovalStatus
+    + getWeblogEntry(): WeblogEntry
+    + getRemoteHost(): String
+    + isNotify(): Boolean
+}
+
+enum ApprovalStatus <<enumeration>> {
+    PENDING
+    APPROVED
+    DISAPPROVED
+    SPAM
+}
+
+class WeblogEntryTag {
+    - id: String
+    - name: String
+    - time: Timestamp
+    
+    + getId(): String
+    + getName(): String
+    + getTime(): Timestamp
+    + getWeblogEntry(): WeblogEntry
+    + getWeblog(): Weblog
+}
+
+class WeblogEntryAttribute {
+    - id: String
+    - name: String
+    - value: String
+    
+    + getId(): String
+    + getName(): String
+    + getValue(): String
+    + getEntry(): WeblogEntry
+}
+
+' Search Criteria Classes
+class WeblogEntrySearchCriteria {
+    - weblog: Weblog
+    - user: User
+    - startDate: Date
+    - endDate: Date
+    - category: String
+    - tags: List<String>
+    - status: PubStatus
+    - text: String
+    - locale: String
+    - offset: int
+    - maxResults: int
+    - sortBy: String
+    
+    + getWeblog(): Weblog
+    + getStartDate(): Date
+    + getEndDate(): Date
+    + getCategory(): String
+    + getTags(): List<String>
+    + getStatus(): PubStatus
+}
+
+class CommentSearchCriteria {
+    - weblog: Weblog
+    - entry: WeblogEntry
+    - searchText: String
+    - startDate: Date
+    - endDate: Date
+    - status: ApprovalStatus
+    - reverseChrono: Boolean
+    - offset: int
+    - maxResults: int
+    
+    + getWeblog(): Weblog
+    + getEntry(): WeblogEntry
+    + getStatus(): ApprovalStatus
+}
+
+' ============================================================
+' RELATIONSHIPS
+' ============================================================
+
+' Composition (Strong Ownership)
+Weblog *-- "0..*" WeblogEntry : contains >
+Weblog *-- "1..*" WeblogCategory : organizes >
+WeblogEntry *-- "0..*" WeblogEntryComment : receives >
+WeblogEntry *-- "0..*" WeblogEntryTag : tagged with >
+WeblogEntry *-- "0..*" WeblogEntryAttribute : has >
+
+' Association
+WeblogEntry --> "1" WeblogCategory : categorized by
+WeblogEntry --> "1" PubStatus : has status
+WeblogEntryComment --> "1" ApprovalStatus : has status
+
+' Dependencies (Manager Usage)
+WeblogManager ..> Weblog : <<manages>>
+WeblogEntryManager ..> WeblogEntry : <<manages>>
+WeblogEntryManager ..> WeblogCategory : <<manages>>
+WeblogEntryManager ..> WeblogEntryComment : <<manages>>
+
+' Search Criteria Dependencies
+WeblogEntryManager ..> WeblogEntrySearchCriteria : <<uses>>
+WeblogEntryManager ..> CommentSearchCriteria : <<uses>>
+WeblogEntrySearchCriteria ..> Weblog : <<filters>>
+WeblogEntrySearchCriteria ..> PubStatus : <<filters>>
+CommentSearchCriteria ..> Weblog : <<filters>>
+CommentSearchCriteria ..> WeblogEntry : <<filters>>
+CommentSearchCriteria ..> ApprovalStatus : <<filters>>
+
+note top of WeblogManager
+  **Responsibility:**
+  - Weblog lifecycle management (CRUD)
+  - Weblog querying and filtering
+  - Handle uniqueness validation
+end note
+
+note top of WeblogEntryManager
+  **Responsibility:**
+  - Entry, comment, category management
+  - Complex queries with multiple criteria
+  - Tag management
+  - Statistics and counting
+  **Design Smell Alert:**
+  Interface has too many responsibilities
+  (potential Interface Segregation violation)
+end note
+
+note right of Weblog
+  **Core Domain Object**
+  Represents a blog/website with:
+  - Configuration settings
+  - Ownership (creator)
+  - Internationalization (locale, timezone)
+  - Comment moderation settings
+end note
+
+note right of WeblogEntry
+  **Core Content Entity**
+  Represents individual blog posts with:
+  - Publication workflow (DRAFT→PUBLISHED)
+  - Comments and tagging
+  - SEO metadata (anchor, searchDescription)
+  - Multi-language support
+end note
+
+@enduml

@@ -1,0 +1,7 @@
+Timestamp,class,wmc,cbo,loc,lcom,rfc,dit,noc,totalMethodsQty,publicMethodsQty,staticMethodsQty,totalFieldsQty,nosi,returnQty,loopQty,comparisonsQty,tryCatchQty,parenthesizedExpsQty,stringLiteralsQty,numbersQty,assignmentsQty,mathOperationsQty,variablesQty,maxNestedBlocksQty,anonymousClassesQty,innerClassesQty,lambdasQty,uniqueWordsQty,checkstyle_errors,pmd_violations,design_smells,Phase,Refactoring
+2026-02-14 19:08:12,org.apache.roller.weblogger.business.CommentManager,7,5,9,21,0,1,0,7,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,68,9,0,0,after,R1.1
+2026-02-14 19:08:12,org.apache.roller.weblogger.business.jpa.JPACommentManagerImpl,23,14,107,0,45,1,0,9,7,1,3,4,6,2,11,0,0,16,14,16,2,16,1,0,0,0,96,56,6,0,after,R1.1
+2026-02-14 19:08:12,org.apache.roller.weblogger.business.jpa.JPAWeblogEntryManagerImpl,184,31,776,0,177,1,0,49,44,2,8,28,36,22,67,7,8,88,95,142,33,119,3,0,0,1,242,406,30,0,after,R1.1
+2026-02-14 19:08:12,org.apache.roller.weblogger.business.jpa.JPAWebloggerModule,1,48,28,0,2,1,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,12,55,0,0,after,R1.1
+2026-02-14 19:08:12,org.apache.roller.weblogger.ui.rendering.velocity.ThemeResourceLoader,18,10,66,4,20,2,0,4,4,0,1,0,3,0,5,1,0,15,11,13,6,10,2,0,0,0,85,16,4,0,after,R1.1
+2026-02-14 19:08:12,org.apache.roller.weblogger.ui.rendering.velocity.VelocityRenderer,12,11,73,0,13,1,0,3,2,0,6,2,1,0,3,3,1,18,0,17,6,12,2,0,0,0,48,21,6,0,after,R1.1

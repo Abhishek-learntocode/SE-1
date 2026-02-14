@@ -1,0 +1,5 @@
+Timestamp,class,wmc,cbo,loc,lcom,rfc,dit,noc,totalMethodsQty,publicMethodsQty,staticMethodsQty,totalFieldsQty,nosi,returnQty,loopQty,comparisonsQty,tryCatchQty,parenthesizedExpsQty,stringLiteralsQty,numbersQty,assignmentsQty,mathOperationsQty,variablesQty,maxNestedBlocksQty,anonymousClassesQty,innerClassesQty,lambdasQty,uniqueWordsQty,checkstyle_errors,pmd_violations,design_smells,Phase,Refactoring
+2026-02-14 19:08:11,org.apache.roller.weblogger.business.jpa.JPAWeblogEntryManagerImpl,197,30,845,0,190,1,0,50,44,3,7,33,37,24,76,7,8,103,107,154,35,131,3,0,0,1,259,436,36,0,before,R1.1
+2026-02-14 19:08:11,org.apache.roller.weblogger.business.jpa.JPAWebloggerModule,1,46,27,0,2,1,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,12,53,0,0,before,R1.1
+2026-02-14 19:08:11,org.apache.roller.weblogger.ui.rendering.velocity.ThemeResourceLoader,18,14,66,4,20,2,0,4,4,0,1,2,3,0,5,1,0,15,11,13,6,10,2,0,0,0,85,16,4,0,before,R1.1
+2026-02-14 19:08:11,org.apache.roller.weblogger.ui.rendering.velocity.VelocityRenderer,12,12,73,0,14,1,0,3,2,0,6,5,1,0,3,3,1,18,0,17,6,12,2,0,0,0,48,21,6,0,before,R1.1

@@ -1,0 +1,68 @@
+@startuml Search_and_Indexing_Subsystem_LLM
+
+' ============================================================
+' LLM-ASSISTED VERSION
+' Search and Indexing Subsystem - Apache Roller
+' Generated using: Claude 3.5 Sonnet
+' Time taken: ~5 minutes
+' ============================================================
+
+interface IndexManager {
+    + addEntryIndexOperation(entry: WeblogEntry): void
+    + removeEntryIndexOperation(entry: WeblogEntry): void
+    + search(term: String, weblogHandle: String): SearchResultList
+    + rebuildIndex(): void
+    + shutdown(): void
+}
+
+class LuceneIndexManager {
+    - indexDir: String
+    - writer: IndexWriter
+    - operations: Queue<IndexOperation>
+    
+    + addEntryIndexOperation(entry: WeblogEntry): void
+    + removeEntryIndexOperation(entry: WeblogEntry): void
+    + search(term: String, weblogHandle: String): SearchResultList
+    + rebuildIndex(): void
+}
+
+abstract class IndexOperation {
+    # entry: WeblogEntry
+    
+    + run(): void
+    # doRun(): void
+}
+
+class AddEntryOperation {
+    + doRun(): void
+}
+
+class RemoveEntryOperation {
+    + doRun(): void
+}
+
+class WeblogEntry {
+    - id: String
+    - title: String
+    - text: String
+}
+
+class SearchResultList {
+    - results: List<WeblogEntry>
+    - totalHits: int
+}
+
+' Relationships
+LuceneIndexManager ..|> IndexManager
+AddEntryOperation --|> IndexOperation
+RemoveEntryOperation --|> IndexOperation
+LuceneIndexManager ..> IndexOperation
+LuceneIndexManager ..> SearchResultList
+IndexOperation ..> WeblogEntry
+
+note top of LuceneIndexManager
+  LLM identified basic structure
+  but missed many implementation details
+end note
+
+@enduml

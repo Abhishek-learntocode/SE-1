@@ -1,0 +1,80 @@
+@startuml Weblog_and_Content_Subsystem_LLM
+
+' ============================================================
+' LLM-ASSISTED VERSION
+' Weblog and Content Subsystem - Apache Roller
+' Generated using: Claude 3.5 Sonnet
+' Time taken: ~8 minutes
+' ============================================================
+
+interface WeblogManager {
+    + addWeblog(weblog: Weblog): void
+    + getWeblog(id: String): Weblog
+    + removeWeblog(weblog: Weblog): void
+}
+
+interface WeblogEntryManager {
+    + saveWeblogEntry(entry: WeblogEntry): void
+    + getWeblogEntry(id: String): WeblogEntry
+    + saveComment(comment: WeblogEntryComment): void
+}
+
+class Weblog {
+    - id: String
+    - handle: String
+    - name: String
+    - creator: String
+    - emailAddress: String
+    - locale: String
+    - enabled: Boolean
+    
+    + getId(): String
+    + getHandle(): String
+    + getName(): String
+}
+
+class WeblogEntry {
+    - id: String
+    - title: String
+    - text: String
+    - anchor: String
+    - pubTime: Timestamp
+    - status: String
+    
+    + getId(): String
+    + getTitle(): String
+    + getText(): String
+}
+
+class WeblogEntryComment {
+    - id: String
+    - name: String
+    - content: String
+    - postTime: Timestamp
+    
+    + getId(): String
+    + getContent(): String
+}
+
+class WeblogCategory {
+    - id: String
+    - name: String
+    
+    + getName(): String
+}
+
+' Relationships
+Weblog "1" -- "0..*" WeblogEntry
+WeblogEntry "1" -- "0..*" WeblogEntryComment
+WeblogEntry "1" -- "1" WeblogCategory
+
+WeblogManager ..> Weblog
+WeblogEntryManager ..> WeblogEntry
+WeblogEntryManager ..> WeblogEntryComment
+
+note top of WeblogEntryManager
+  LLM simplified the interface
+  Missing many methods and relationships
+end note
+
+@enduml

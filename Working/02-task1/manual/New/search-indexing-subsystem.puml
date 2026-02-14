@@ -1,0 +1,183 @@
+@startuml Search_and_Indexing_Subsystem
+
+' ============================================================
+' Search and Indexing Subsystem - Apache Roller
+' ============================================================
+
+' Interface
+interface IndexManager <<interface>> {
+    + initialize(): void
+    + shutdown(): void
+    + release(): void
+    + isInconsistentAtStartup(): boolean
+    + addEntryIndexOperation(entry: WeblogEntry): void
+    + addEntryReIndexOperation(entry: WeblogEntry): void
+    + removeEntryIndexOperation(entry: WeblogEntry): void
+    + rebuildWeblogIndex(weblog: Weblog): void
+    + rebuildWeblogIndex(): void
+    + removeWeblogIndex(weblog: Weblog): void
+    + search(term: String, weblogHandle: String, category: String, locale: String, pageNum: int, entryCount: int, urlStrategy: URLStrategy): SearchResultList
+}
+
+' Main Implementation Class
+class LuceneIndexManager {
+    - indexDir: String
+    - analyzer: Analyzer
+    - indexReader: IndexReader
+    - searcherManager: SearcherManager
+    - writer: IndexWriter
+    - inconsistentAtStartup: boolean
+    - indexSessionFactory: SessionFactory
+    - weblogger: Weblogger
+    - executorService: ScheduledExecutorService
+    - operations: BlockingQueue<IndexOperation>
+    
+    + initialize(): void
+    + shutdown(): void
+    + release(): void
+    + isInconsistentAtStartup(): boolean
+    + addEntryIndexOperation(entry: WeblogEntry): void
+    + addEntryReIndexOperation(entry: WeblogEntry): void
+    + removeEntryIndexOperation(entry: WeblogEntry): void
+    + rebuildWeblogIndex(weblog: Weblog): void
+    + rebuildWeblogIndex(): void
+    + removeWeblogIndex(weblog: Weblog): void
+    + search(term: String, weblogHandle: String, category: String, locale: String, pageNum: int, entryCount: int, urlStrategy: URLStrategy): SearchResultList
+    - executeIndexOperationNow(operation: IndexOperation): void
+    - getFuture(operation: IndexOperation): Future
+    - getIndexWriter(): IndexWriter
+    - getDocument(entry: WeblogEntry): Document
+}
+
+' Constants Class
+class FieldConstants <<utility>> {
+    + {static} ID: String = "id"
+    + {static} TITLE: String = "title"
+    + {static} CONTENT: String = "content"
+    + {static} CATEGORY: String = "category"
+    + {static} UPDATED: String = "updated"
+    + {static} PUBLISHED: String = "published"
+    + {static} WEBLOG_HANDLE: String = "weblogHandle"
+    + {static} LOCALE: String = "locale"
+    + {static} TAG: String = "tag"
+    + {static} CREATOR: String = "creator"
+    + {static} C_STATUS: String = "status"
+}
+
+' Abstract Base Operation
+abstract class IndexOperation {
+    # indexManager: IndexManager
+    # entry: WeblogEntry
+    - {static} log: Log
+    
+    # IndexOperation(indexManager: IndexManager, entry: WeblogEntry)
+    + {final} run(): void
+    # {abstract} doRun(): void
+    + getEntry(): WeblogEntry
+    + setEntry(entry: WeblogEntry): void
+}
+
+' Concrete Operations
+class AddEntryOperation {
+    + AddEntryOperation(indexManager: IndexManager, entry: WeblogEntry)
+    # doRun(): void
+}
+
+class ReIndexEntryOperation {
+    + ReIndexEntryOperation(indexManager: IndexManager, entry: WeblogEntry)
+    # doRun(): void
+}
+
+class RemoveEntryOperation {
+    + RemoveEntryOperation(indexManager: IndexManager, entry: WeblogEntry)
+    # doRun(): void
+}
+
+' External Classes
+class WeblogEntry <<external>> {
+    + getId(): String
+    + getTitle(): String
+    + getText(): String
+    + getCategory(): WeblogCategory
+    + getPubTime(): Timestamp
+    + getUpdateTime(): Timestamp
+    + getStatus(): PubStatus
+}
+
+class Weblog <<external>> {
+    + getHandle(): String
+    + getName(): String
+    + getId(): String
+}
+
+class SearchResultList <<external>> {
+    - results: List<WeblogEntry>
+    - offset: int
+    - limit: int
+    - totalHits: int
+    + getResults(): List<WeblogEntry>
+    + getOffset(): int
+    + getLimit(): int
+    + getTotalHits(): int
+}
+
+interface Runnable <<interface>> {
+    + run(): void
+}
+
+class URLStrategy <<external>> {
+    + getWeblogEntryURL(): String
+}
+
+' ============================================================
+' RELATIONSHIPS
+' ============================================================
+
+' Realization (Implementation)
+LuceneIndexManager ..|> IndexManager : <<implements>>
+IndexOperation ..|> Runnable : <<implements>>
+
+' Generalization (Inheritance)
+AddEntryOperation --|> IndexOperation : <<extends>>
+ReIndexEntryOperation --|> IndexOperation : <<extends>>
+RemoveEntryOperation --|> IndexOperation : <<extends>>
+
+' Composition (Strong ownership)
+LuceneIndexManager *-- "0..*" IndexOperation : queues >
+
+' Aggregation (Weak ownership)
+IndexOperation o-- "1" IndexManager : uses >
+IndexOperation o-- "1" WeblogEntry : operates on >
+
+' Dependencies (Usage)
+LuceneIndexManager ..> FieldConstants : <<uses>>
+LuceneIndexManager ..> AddEntryOperation : <<creates>>
+LuceneIndexManager ..> ReIndexEntryOperation : <<creates>>
+LuceneIndexManager ..> RemoveEntryOperation : <<creates>>
+LuceneIndexManager ..> SearchResultList : <<returns>>
+LuceneIndexManager ..> URLStrategy : <<uses>>
+
+IndexManager ..> WeblogEntry : <<parameter>>
+IndexManager ..> Weblog : <<parameter>>
+IndexManager ..> SearchResultList : <<returns>>
+IndexManager ..> URLStrategy : <<parameter>>
+
+AddEntryOperation ..> FieldConstants : <<uses>>
+ReIndexEntryOperation ..> FieldConstants : <<uses>>
+RemoveEntryOperation ..> FieldConstants : <<uses>>
+
+note top of LuceneIndexManager
+  **Design Pattern: Strategy Pattern**
+  IndexManager defines the strategy interface,
+  LuceneIndexManager is the concrete strategy.
+  Could be replaced with other search engines.
+end note
+
+note bottom of IndexOperation
+  **Design Pattern: Template Method + Command**
+  - Template Method: run() defines skeleton
+  - Command: Each operation is a command object
+  - Enables async execution via queue
+end note
+
+@enduml

@@ -1,0 +1,297 @@
+@startuml search-indexing
+title search-indexing subsystem (merged)
+hide empty members
+skinparam classAttributeIconSize 0
+
+package org.apache.roller.weblogger.business.search {
+  interface "IndexManager" as IndexManager {
+    addEntryIndexOperation(org.apache.roller.weblogger.pojos.WeblogEntry)
+    addEntryReIndexOperation(org.apache.roller.weblogger.pojos.WeblogEntry)
+    initialize()
+    isInconsistentAtStartup()
+    rebuildWeblogIndex()
+    rebuildWeblogIndex(org.apache.roller.weblogger.pojos.Weblog)
+    release()
+    removeEntryIndexOperation(org.apache.roller.weblogger.pojos.WeblogEntry)
+    removeWeblogIndex(org.apache.roller.weblogger.pojos.Weblog)
+    search(java.lang.String,java.lang.String,java.lang.String,java.lang.String,int,int,org.apache.roller.weblogger.business.URLStrategy)
+    shutdown()
+  }
+  class "SearchResultList" as SearchResultList {
+    SearchResultList(java.util.List<org.apache.roller.weblogger.pojos.wrapper.WeblogEntryWrapper>,java.util.Set<java.lang.String>,int,int)
+    getCategories()
+    getLimit()
+    getOffset()
+    getResults()
+  }
+  class "SearchResultMap" as SearchResultMap {
+    SearchResultMap(java.util.Map<java.util.Date,java.util.Set<org.apache.roller.weblogger.pojos.wrapper.WeblogEntryWrapper>>,java.util.Set<java.lang.String>,int,int)
+    getCategories()
+    getLimit()
+    getOffset()
+    getResults()
+  }
+}
+
+package org.apache.roller.weblogger.business.search.lucene {
+  class "AddEntryOperation" as AddEntryOperation {
+    AddEntryOperation(org.apache.roller.weblogger.business.Weblogger,org.apache.roller.weblogger.business.search.lucene.LuceneIndexManager,org.apache.roller.weblogger.pojos.WeblogEntry)
+    doRun()
+  }
+  class "FieldConstants" as FieldConstants
+  class "IndexOperation" as IndexOperation {
+    IndexOperation(org.apache.roller.weblogger.business.search.lucene.LuceneIndexManager)
+    beginWriting()
+    doRun()
+    endWriting()
+    getDocument(org.apache.roller.weblogger.pojos.WeblogEntry)
+    run()
+  }
+  class "IndexUtil" as IndexUtil {
+    IndexUtil()
+    getTerm(java.lang.String,java.lang.String)
+  }
+  class "LuceneIndexManager" as LuceneIndexManager {
+    LuceneIndexManager(org.apache.roller.weblogger.business.Weblogger)
+    addEntryIndexOperation(org.apache.roller.weblogger.pojos.WeblogEntry)
+    addEntryReIndexOperation(org.apache.roller.weblogger.pojos.WeblogEntry)
+    convertHitsToEntryList(org.apache.roller.weblogger.business.search.lucene.ScoreDoc[],org.apache.roller.weblogger.business.search.lucene.SearchOperation,int,int,java.lang.String,boolean,org.apache.roller.weblogger.business.URLStrategy)
+    createIndex(org.apache.roller.weblogger.business.search.lucene.Directory)
+    deleteIndex()
+    executeIndexOperationNow(org.apache.roller.weblogger.business.search.lucene.IndexOperation)
+    getAnalyzer()
+    getIndexDirectory()
+    getReadWriteLock()
+    getSharedIndexReader()
+    indexExists()
+    initialize()
+    instantiateAnalyzer()
+    instantiateDefaultAnalyzer()
+    isInconsistentAtStartup()
+    rebuildWeblogIndex()
+    rebuildWeblogIndex(org.apache.roller.weblogger.pojos.Weblog)
+    release()
+    removeEntryIndexOperation(org.apache.roller.weblogger.pojos.WeblogEntry)
+    removeWeblogIndex(org.apache.roller.weblogger.pojos.Weblog)
+    resetSharedReader()
+    scheduleIndexOperation(org.apache.roller.weblogger.business.search.lucene.IndexOperation)
+    search(java.lang.String,java.lang.String,java.lang.String,java.lang.String,int,int,org.apache.roller.weblogger.business.URLStrategy)
+    shutdown()
+  }
+  class "ReIndexEntryOperation" as ReIndexEntryOperation {
+    ReIndexEntryOperation(org.apache.roller.weblogger.business.Weblogger,org.apache.roller.weblogger.business.search.lucene.LuceneIndexManager,org.apache.roller.weblogger.pojos.WeblogEntry)
+    doRun()
+  }
+  class "ReadFromIndexOperation" as ReadFromIndexOperation {
+    ReadFromIndexOperation(org.apache.roller.weblogger.business.search.lucene.LuceneIndexManager)
+    run()
+  }
+  class "RebuildWebsiteIndexOperation" as RebuildWebsiteIndexOperation {
+    RebuildWebsiteIndexOperation(org.apache.roller.weblogger.business.Weblogger,org.apache.roller.weblogger.business.search.lucene.LuceneIndexManager,org.apache.roller.weblogger.pojos.Weblog)
+    doRun()
+  }
+  class "RemoveEntryOperation" as RemoveEntryOperation {
+    RemoveEntryOperation(org.apache.roller.weblogger.business.Weblogger,org.apache.roller.weblogger.business.search.lucene.LuceneIndexManager,org.apache.roller.weblogger.pojos.WeblogEntry)
+    doRun()
+  }
+  class "RemoveWebsiteIndexOperation" as RemoveWebsiteIndexOperation {
+    RemoveWebsiteIndexOperation(org.apache.roller.weblogger.business.Weblogger,org.apache.roller.weblogger.business.search.lucene.LuceneIndexManager,org.apache.roller.weblogger.pojos.Weblog)
+    doRun()
+  }
+  class "SearchOperation" as SearchOperation {
+    SearchOperation(org.apache.roller.weblogger.business.search.IndexManager)
+    doRun()
+    getParseError()
+    getResults()
+    getResultsCount()
+    getSearcher()
+    setCategory(java.lang.String)
+    setLocale(java.lang.String)
+    setSearcher(org.apache.roller.weblogger.business.search.lucene.IndexSearcher)
+    setTerm(java.lang.String)
+    setWeblogHandle(java.lang.String)
+  }
+  class "WriteToIndexOperation" as WriteToIndexOperation {
+    WriteToIndexOperation(org.apache.roller.weblogger.business.search.lucene.LuceneIndexManager)
+    run()
+  }
+}
+
+package org.apache.roller.weblogger.pojos {
+  class "CommentSearchCriteria" as CommentSearchCriteria {
+    getEndDate()
+    getEntry()
+    getMaxResults()
+    getOffset()
+    getSearchText()
+    getStartDate()
+    getStatus()
+    getWeblog()
+    isReverseChrono()
+    setEndDate(java.util.Date)
+    setEntry(org.apache.roller.weblogger.pojos.WeblogEntry)
+    setMaxResults(int)
+    setOffset(int)
+    setReverseChrono(boolean)
+    setSearchText(java.lang.String)
+    setStartDate(java.util.Date)
+    setStatus(org.apache.roller.weblogger.pojos.WeblogEntryComment.ApprovalStatus)
+    setWeblog(org.apache.roller.weblogger.pojos.Weblog)
+  }
+  class "WeblogEntrySearchCriteria" as WeblogEntrySearchCriteria {
+    getCatName()
+    getEndDate()
+    getLocale()
+    getMaxResults()
+    getOffset()
+    getSortBy()
+    getSortOrder()
+    getStartDate()
+    getStatus()
+    getTags()
+    getText()
+    getUser()
+    getWeblog()
+    setCatName(java.lang.String)
+    setEndDate(java.util.Date)
+    setLocale(java.lang.String)
+    setMaxResults(int)
+    setOffset(int)
+    setSortBy(org.apache.roller.weblogger.pojos.WeblogEntrySearchCriteria.SortBy)
+    setSortOrder(org.apache.roller.weblogger.pojos.WeblogEntrySearchCriteria.SortOrder)
+    setStartDate(java.util.Date)
+    setStatus(org.apache.roller.weblogger.pojos.WeblogEntry.PubStatus)
+    setTags(java.util.List<java.lang.String>)
+    setText(java.lang.String)
+    setUser(org.apache.roller.weblogger.pojos.User)
+    setWeblog(org.apache.roller.weblogger.pojos.Weblog)
+  }
+  enum "WeblogEntrySearchCriteria$SortBy" as WeblogEntrySearchCriteria_SortBy
+  enum "WeblogEntrySearchCriteria$SortOrder" as WeblogEntrySearchCriteria_SortOrder
+}
+
+package org.apache.roller.weblogger.ui.rendering.model {
+  class "SearchResultsFeedModel" as SearchResultsFeedModel {
+    getCategories()
+    getCategoryName()
+    getErrorMessage()
+    getHits()
+    getLimit()
+    getModelName()
+    getOffset()
+    getPage()
+    getResults()
+    getSearchResultsPager()
+    getTerm()
+    getWeblog()
+    getWeblogCategory()
+    init(java.util.Map<java.lang.String,java.lang.Object>)
+  }
+  class "SearchResultsModel" as SearchResultsModel {
+    addEntryToResults(java.util.Map<java.util.Date,java.util.Set<org.apache.roller.weblogger.pojos.wrapper.WeblogEntryWrapper>>,org.apache.roller.weblogger.pojos.wrapper.WeblogEntryWrapper)
+    getCategories()
+    getErrorMessage()
+    getHits()
+    getLimit()
+    getOffset()
+    getRawTerm()
+    getResults()
+    getTerm()
+    getWeblogCategory()
+    getWeblogCategoryName()
+    getWeblogEntriesPager()
+    getWeblogEntriesPager(java.lang.String)
+    init(java.util.Map<java.lang.String,java.lang.Object>)
+    isSearchResults()
+  }
+}
+
+package org.apache.roller.weblogger.ui.rendering.pagers {
+  class "SearchResultsFeedPager" as SearchResultsFeedPager {
+    SearchResultsFeedPager(org.apache.roller.weblogger.business.URLStrategy,java.lang.String,int,org.apache.roller.weblogger.ui.rendering.util.WeblogFeedRequest,java.util.List<org.apache.roller.weblogger.pojos.wrapper.WeblogEntryWrapper>,boolean)
+    createURL(java.lang.String,java.util.Map<java.lang.String,java.lang.String>)
+    getHomeLink()
+    getHomeName()
+    getItems()
+    getUrl()
+    hasMoreItems()
+  }
+  class "SearchResultsPager" as SearchResultsPager {
+    SearchResultsPager(org.apache.roller.weblogger.business.URLStrategy,org.apache.roller.weblogger.ui.rendering.util.WeblogSearchRequest,java.util.Map<java.util.Date,java.util.Set<org.apache.roller.weblogger.pojos.wrapper.WeblogEntryWrapper>>,boolean)
+    getEntries()
+    getHomeLink()
+    getHomeName()
+    getNextCollectionLink()
+    getNextCollectionName()
+    getNextLink()
+    getNextName()
+    getPrevCollectionLink()
+    getPrevCollectionName()
+    getPrevLink()
+    getPrevName()
+  }
+}
+
+package org.apache.roller.weblogger.ui.rendering.servlets {
+  class "SearchServlet" as SearchServlet {
+    doGet(org.apache.roller.weblogger.ui.rendering.servlets.HttpServletRequest,org.apache.roller.weblogger.ui.rendering.servlets.HttpServletResponse)
+    init(org.apache.roller.weblogger.ui.rendering.servlets.ServletConfig)
+  }
+}
+
+package org.apache.roller.weblogger.ui.rendering.util {
+  class "WeblogSearchRequest" as WeblogSearchRequest {
+    WeblogSearchRequest()
+    WeblogSearchRequest(org.apache.roller.weblogger.ui.rendering.util.HttpServletRequest)
+    getPageNum()
+    getQuery()
+    getWeblogCategory()
+    getWeblogCategoryName()
+    setPageNum(int)
+    setQuery(java.lang.String)
+    setWeblogCategory(org.apache.roller.weblogger.pojos.WeblogCategory)
+    setWeblogCategoryName(java.lang.String)
+  }
+}
+
+package org.apache.roller.weblogger.ui.struts2.editor {
+  class "MediaFileSearchBean" as MediaFileSearchBean {
+    copyTo(org.apache.roller.weblogger.ui.struts2.editor.MediaFileFilter)
+    getName()
+    getPageNum()
+    getSize()
+    getSizeFilterType()
+    getSizeFilterTypeLabel()
+    getSizeUnit()
+    getSizeUnitLabel()
+    getSortOption()
+    getTags()
+    getType()
+    getTypeLabel()
+    setName(java.lang.String)
+    setPageNum(int)
+    setSize(long)
+    setSizeFilterType(java.lang.String)
+    setSizeUnit(java.lang.String)
+    setSortOption(int)
+    setTags(java.lang.String)
+    setType(java.lang.String)
+  }
+}
+
+package org.apache.roller.weblogger.webservices.opensearch {
+  class "OpenSearchServlet" as OpenSearchServlet {
+    doGet(org.apache.roller.weblogger.webservices.opensearch.HttpServletRequest,org.apache.roller.weblogger.webservices.opensearch.HttpServletResponse)
+  }
+}
+
+IndexManager <|.. LuceneIndexManager
+IndexOperation <|-- ReadFromIndexOperation
+IndexOperation <|-- WriteToIndexOperation
+ReadFromIndexOperation <|-- SearchOperation
+WriteToIndexOperation <|-- AddEntryOperation
+WriteToIndexOperation <|-- ReIndexEntryOperation
+WriteToIndexOperation <|-- RebuildWebsiteIndexOperation
+WriteToIndexOperation <|-- RemoveEntryOperation
+WriteToIndexOperation <|-- RemoveWebsiteIndexOperation
+@enduml

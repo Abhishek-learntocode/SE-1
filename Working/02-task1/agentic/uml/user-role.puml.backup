@@ -1,0 +1,365 @@
+@startuml
+title user-role subsystem (merged)
+hide empty members
+skinparam classAttributeIconSize 0
+
+package org.apache.roller.weblogger.business {
+  interface "UserManager" as UserManager
+  UserManager {
+    addUser(org.apache.roller.weblogger.pojos.User)
+    checkPermission(org.apache.roller.weblogger.pojos.RollerPermission,org.apache.roller.weblogger.pojos.User)
+    confirmWeblogPermission(org.apache.roller.weblogger.pojos.Weblog,org.apache.roller.weblogger.pojos.User)
+    declineWeblogPermission(org.apache.roller.weblogger.pojos.Weblog,org.apache.roller.weblogger.pojos.User)
+    getPendingWeblogPermissions(org.apache.roller.weblogger.pojos.User)
+    getPendingWeblogPermissions(org.apache.roller.weblogger.pojos.Weblog)
+    getRoles(org.apache.roller.weblogger.pojos.User)
+    getUser(java.lang.String)
+    getUserByActivationCode(java.lang.String)
+    getUserByOpenIdUrl(java.lang.String)
+    getUserByUserName(java.lang.String)
+    getUserByUserName(java.lang.String,java.lang.Boolean)
+    getUserCount()
+    getUserNameLetterMap()
+    getUsers(java.lang.Boolean,java.util.Date,java.util.Date,int,int)
+    getUsersByLetter(char,int,int)
+    getUsersStartingWith(java.lang.String,java.lang.Boolean,int,int)
+    getWeblogPermission(org.apache.roller.weblogger.pojos.Weblog,org.apache.roller.weblogger.pojos.User)
+    getWeblogPermissionIncludingPending(org.apache.roller.weblogger.pojos.Weblog,org.apache.roller.weblogger.pojos.User)
+    getWeblogPermissions(org.apache.roller.weblogger.pojos.User)
+    getWeblogPermissions(org.apache.roller.weblogger.pojos.Weblog)
+    getWeblogPermissionsIncludingPending(org.apache.roller.weblogger.pojos.Weblog)
+    grantRole(java.lang.String,org.apache.roller.weblogger.pojos.User)
+    grantWeblogPermission(org.apache.roller.weblogger.pojos.Weblog,org.apache.roller.weblogger.pojos.User,java.util.List<java.lang.String>)
+    grantWeblogPermissionPending(org.apache.roller.weblogger.pojos.Weblog,org.apache.roller.weblogger.pojos.User,java.util.List<java.lang.String>)
+    hasRole(java.lang.String,org.apache.roller.weblogger.pojos.User)
+    release()
+    removeUser(org.apache.roller.weblogger.pojos.User)
+    revokeRole(java.lang.String,org.apache.roller.weblogger.pojos.User)
+    revokeWeblogPermission(org.apache.roller.weblogger.pojos.Weblog,org.apache.roller.weblogger.pojos.User,java.util.List<java.lang.String>)
+    saveUser(org.apache.roller.weblogger.pojos.User)
+  }
+}
+
+package org.apache.roller.weblogger.business.jpa {
+  class "JPAUserManagerImpl" as JPAUserManagerImpl
+  JPAUserManagerImpl {
+    JPAUserManagerImpl(org.apache.roller.weblogger.business.jpa.JPAPersistenceStrategy)
+    addUser(org.apache.roller.weblogger.pojos.User)
+    checkPermission(org.apache.roller.weblogger.pojos.RollerPermission,org.apache.roller.weblogger.pojos.User)
+    confirmWeblogPermission(org.apache.roller.weblogger.pojos.Weblog,org.apache.roller.weblogger.pojos.User)
+    declineWeblogPermission(org.apache.roller.weblogger.pojos.Weblog,org.apache.roller.weblogger.pojos.User)
+    getPendingWeblogPermissions(org.apache.roller.weblogger.pojos.User)
+    getPendingWeblogPermissions(org.apache.roller.weblogger.pojos.Weblog)
+    getRoles(org.apache.roller.weblogger.pojos.User)
+    getUser(java.lang.String)
+    getUserByActivationCode(java.lang.String)
+    getUserByOpenIdUrl(java.lang.String)
+    getUserByUserName(java.lang.String)
+    getUserByUserName(java.lang.String,java.lang.Boolean)
+    getUserCount()
+    getUserNameLetterMap()
+    getUsers(java.lang.Boolean,java.util.Date,java.util.Date,int,int)
+    getUsersByLetter(char,int,int)
+    getUsersStartingWith(java.lang.String,java.lang.Boolean,int,int)
+    getWeblogPermission(org.apache.roller.weblogger.pojos.Weblog,org.apache.roller.weblogger.pojos.User)
+    getWeblogPermissionIncludingPending(org.apache.roller.weblogger.pojos.Weblog,org.apache.roller.weblogger.pojos.User)
+    getWeblogPermissions(org.apache.roller.weblogger.pojos.User)
+    getWeblogPermissions(org.apache.roller.weblogger.pojos.Weblog)
+    getWeblogPermissionsIncludingPending(org.apache.roller.weblogger.pojos.Weblog)
+    grantRole(java.lang.String,org.apache.roller.weblogger.pojos.User)
+    grantWeblogPermission(org.apache.roller.weblogger.pojos.Weblog,org.apache.roller.weblogger.pojos.User,java.util.List<java.lang.String>)
+    grantWeblogPermissionPending(org.apache.roller.weblogger.pojos.Weblog,org.apache.roller.weblogger.pojos.User,java.util.List<java.lang.String>)
+    hasRole(java.lang.String,org.apache.roller.weblogger.pojos.User)
+    release()
+    removeUser(org.apache.roller.weblogger.pojos.User)
+    revokeRole(java.lang.String,org.apache.roller.weblogger.pojos.User)
+    revokeWeblogPermission(org.apache.roller.weblogger.pojos.Weblog,org.apache.roller.weblogger.pojos.User,java.util.List<java.lang.String>)
+    saveUser(org.apache.roller.weblogger.pojos.User)
+  }
+}
+
+package org.apache.roller.weblogger.pojos {
+  class "GlobalPermission" as GlobalPermission
+  GlobalPermission {
+    GlobalPermission(java.util.List<java.lang.String>)
+    GlobalPermission(org.apache.roller.weblogger.pojos.User)
+    GlobalPermission(org.apache.roller.weblogger.pojos.User,java.util.List<java.lang.String>)
+    actionImplies(java.lang.String,java.lang.String)
+    equals(java.lang.Object)
+    getActions()
+    hashCode()
+    implies(java.security.Permission)
+    setActions(java.lang.String)
+    toString()
+  }
+  class "ObjectPermission" as ObjectPermission
+  ObjectPermission {
+    ObjectPermission()
+    ObjectPermission(java.lang.String)
+    getActions()
+    getDateCreated()
+    getId()
+    getObjectId()
+    getUserName()
+    isPending()
+    setActions(java.lang.String)
+    setDateCreated(java.util.Date)
+    setId(java.lang.String)
+    setObjectId(java.lang.String)
+    setPending(boolean)
+    setUserName(java.lang.String)
+  }
+  class "RollerPermission" as RollerPermission
+  RollerPermission {
+    RollerPermission(java.lang.String)
+    addActions(java.util.List<java.lang.String>)
+    addActions(org.apache.roller.weblogger.pojos.ObjectPermission)
+    getActions()
+    getActionsAsList()
+    hasAction(java.lang.String)
+    hasActions(java.util.List<java.lang.String>)
+    isEmpty()
+    removeActions(java.util.List<java.lang.String>)
+    setActions(java.lang.String)
+    setActionsAsList(java.util.List<java.lang.String>)
+  }
+  class "User" as User
+  User {
+    User()
+    User(java.lang.String,java.lang.String,java.lang.String,java.lang.String,java.lang.String,java.lang.String,java.lang.String,java.util.Date,java.lang.Boolean)
+    equals(java.lang.Object)
+    getActivationCode()
+    getDateCreated()
+    getEmailAddress()
+    getEnabled()
+    getFullName()
+    getId()
+    getLocale()
+    getOpenIdUrl()
+    getPassword()
+    getScreenName()
+    getTimeZone()
+    getUserName()
+    hasGlobalPermission(java.lang.String)
+    hasGlobalPermissions(java.util.List<java.lang.String>)
+    hashCode()
+    resetPassword(java.lang.String)
+    setActivationCode(java.lang.String)
+    setDateCreated(java.util.Date)
+    setEmailAddress(java.lang.String)
+    setEnabled(java.lang.Boolean)
+    setFullName(java.lang.String)
+    setId(java.lang.String)
+    setLocale(java.lang.String)
+    setOpenIdUrl(java.lang.String)
+    setPassword(java.lang.String)
+    setScreenName(java.lang.String)
+    setTimeZone(java.lang.String)
+    setUserName(java.lang.String)
+    toString()
+  }
+  class "UserRole" as UserRole
+  UserRole {
+    UserRole()
+    UserRole(java.lang.String,java.lang.String)
+    equals(java.lang.Object)
+    getId()
+    getRole()
+    getUserName()
+    hashCode()
+    setId(java.lang.String)
+    setRole(java.lang.String)
+    setUserName(java.lang.String)
+    toString()
+  }
+  class "WeblogPermission" as WeblogPermission
+  WeblogPermission {
+    WeblogPermission()
+    WeblogPermission(org.apache.roller.weblogger.pojos.Weblog,java.util.List<java.lang.String>)
+    WeblogPermission(org.apache.roller.weblogger.pojos.Weblog,org.apache.roller.weblogger.pojos.User,java.lang.String)
+    WeblogPermission(org.apache.roller.weblogger.pojos.Weblog,org.apache.roller.weblogger.pojos.User,java.util.List<java.lang.String>)
+    equals(java.lang.Object)
+    getUser()
+    getWeblog()
+    hashCode()
+    implies(java.security.Permission)
+    toString()
+  }
+}
+
+package org.apache.roller.weblogger.pojos.wrapper {
+  class "UserWrapper" as UserWrapper
+  UserWrapper {
+    UserWrapper(org.apache.roller.weblogger.pojos.User)
+    getDateCreated()
+    getEmailAddress()
+    getFullName()
+    getLocale()
+    getScreenName()
+    getTimeZone()
+    getUserName()
+    wrap(org.apache.roller.weblogger.pojos.User)
+  }
+}
+
+package org.apache.roller.weblogger.ui.core.filters {
+  class "RoleAssignmentFilter" as RoleAssignmentFilter
+  RoleAssignmentFilter {
+    destroy()
+    doFilter(org.apache.roller.weblogger.ui.core.filters.ServletRequest,org.apache.roller.weblogger.ui.core.filters.ServletResponse,org.apache.roller.weblogger.ui.core.filters.FilterChain)
+    init(org.apache.roller.weblogger.ui.core.filters.FilterConfig)
+  }
+  class "RoleAssignmentRequestWrapper" as RoleAssignmentRequestWrapper
+  RoleAssignmentRequestWrapper {
+    RoleAssignmentRequestWrapper(org.apache.roller.weblogger.ui.core.filters.HttpServletRequest)
+    isUserInRole(java.lang.String)
+  }
+}
+
+package org.apache.roller.weblogger.ui.core.security {
+  class "AuthoritiesPopulator" as AuthoritiesPopulator
+  AuthoritiesPopulator {
+    getGrantedAuthorities(org.apache.roller.weblogger.ui.core.security.DirContextOperations,java.lang.String)
+    setDefaultRole(java.lang.String)
+  }
+  interface "AutoProvision" as AutoProvision
+  AutoProvision {
+    execute(org.apache.roller.weblogger.ui.core.security.HttpServletRequest)
+  }
+  class "BasicUserAutoProvision" as BasicUserAutoProvision
+  BasicUserAutoProvision {
+    execute(org.apache.roller.weblogger.ui.core.security.HttpServletRequest)
+    hasNecessaryFields(org.apache.roller.weblogger.pojos.User)
+  }
+  class "CustomUserRegistry" as CustomUserRegistry
+  CustomUserRegistry {
+    getLdapAttribute(javax.naming.directory.Attributes,java.lang.String)
+    getRequestAttribute(org.apache.roller.weblogger.ui.core.security.HttpServletRequest,java.lang.String)
+    getUserDetailsFromAuthentication(org.apache.roller.weblogger.ui.core.security.HttpServletRequest)
+  }
+  class "RollerRememberMeAuthenticationProvider" as RollerRememberMeAuthenticationProvider
+  RollerRememberMeAuthenticationProvider {
+    RollerRememberMeAuthenticationProvider()
+  }
+  class "RollerRememberMeServices" as RollerRememberMeServices
+  RollerRememberMeServices {
+    RollerRememberMeServices(org.apache.roller.weblogger.ui.core.security.UserDetailsService)
+    makeTokenSignature(long,java.lang.String,java.lang.String)
+  }
+  interface "RollerUserDetails" as RollerUserDetails
+  RollerUserDetails {
+    getEmailAddress()
+    getFullName()
+    getLocale()
+    getScreenName()
+    getTimeZone()
+  }
+  class "RollerUserDetailsService" as RollerUserDetailsService
+  RollerUserDetailsService {
+    getAuthorities(org.apache.roller.weblogger.pojos.User,org.apache.roller.weblogger.business.UserManager)
+    loadUserByUsername(java.lang.String)
+  }
+}
+
+package org.apache.roller.weblogger.ui.rendering.pagers {
+  class "UsersPager" as UsersPager
+  UsersPager {
+    UsersPager(org.apache.roller.weblogger.business.URLStrategy,java.lang.String,java.lang.String,int,int,int)
+    UsersPager(org.apache.roller.weblogger.business.URLStrategy,java.lang.String,java.lang.String,java.lang.String,int,int,int)
+    getItems()
+    getNextLink()
+    getPrevLink()
+    hasMoreItems()
+  }
+}
+
+package org.apache.roller.weblogger.ui.struts2.admin {
+  class "CreateUserBean" as CreateUserBean
+  CreateUserBean {
+    copyFrom(org.apache.roller.weblogger.ui.struts2.admin.User)
+    copyTo(org.apache.roller.weblogger.ui.struts2.admin.User)
+    getActivationCode()
+    getEmailAddress()
+    getEnabled()
+    getFullName()
+    getId()
+    getList()
+    getLocale()
+    getOpenIdUrl()
+    getPassword()
+    getScreenName()
+    getTimeZone()
+    getUserName()
+    isAdministrator()
+    setActivationCode(java.lang.String)
+    setAdministrator(boolean)
+    setEmailAddress(java.lang.String)
+    setEnabled(java.lang.Boolean)
+    setFullName(java.lang.String)
+    setId(java.lang.String)
+    setList(java.util.List<java.lang.String>)
+    setLocale(java.lang.String)
+    setOpenIdUrl(java.lang.String)
+    setPassword(java.lang.String)
+    setScreenName(java.lang.String)
+    setTimeZone(java.lang.String)
+    setUserName(java.lang.String)
+  }
+  class "UserAdmin" as UserAdmin
+  UserAdmin {
+    UserAdmin()
+    edit()
+    execute()
+    getAuthMethod()
+    getBean()
+    isWeblogRequired()
+    requiredGlobalPermissionActions()
+    setBean(org.apache.roller.weblogger.ui.struts2.admin.CreateUserBean)
+  }
+  class "UserEdit" as UserEdit
+  UserEdit {
+    UserEdit()
+    execute()
+    firstSave()
+    getAuthMethod()
+    getBean()
+    getPermissions()
+    isAdd()
+    isUserEditingSelf()
+    isWeblogRequired()
+    myPrepare()
+    myValidate()
+    requiredGlobalPermissionActions()
+    save()
+    setBean(org.apache.roller.weblogger.ui.struts2.admin.CreateUserBean)
+    setPageTitle(java.lang.String)
+  }
+}
+
+package org.apache.roller.weblogger.ui.struts2.ajax {
+  class "UserDataServlet" as UserDataServlet
+  UserDataServlet {
+    doGet(org.apache.roller.weblogger.ui.struts2.ajax.HttpServletRequest,org.apache.roller.weblogger.ui.struts2.ajax.HttpServletResponse)
+  }
+}
+
+package org.apache.roller.weblogger.ui.struts2.util {
+  interface "UISecurityEnforced" as UISecurityEnforced
+  UISecurityEnforced {
+    isUserRequired()
+    isWeblogRequired()
+    requiredGlobalPermissionActions()
+    requiredWeblogPermissionActions()
+  }
+  class "UISecurityInterceptor" as UISecurityInterceptor
+  UISecurityInterceptor {
+    doIntercept(org.apache.roller.weblogger.ui.struts2.util.ActionInvocation)
+  }
+}
+
+AutoProvision <|.. BasicUserAutoProvision
+ObjectPermission <|-- WeblogPermission
+RollerPermission <|-- GlobalPermission
+RollerPermission <|-- ObjectPermission
+UserManager <|.. JPAUserManagerImpl
+@enduml

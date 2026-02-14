@@ -1,0 +1,2 @@
+Timestamp,Total_Classes,Total_LOC,God_Classes,Max_WMC,Avg_WMC,Median_WMC,Max_CBO,Avg_CBO,Median_CBO,Avg_LCOM,Avg_RFC,Avg_DIT,Classes_Low_WMC,Classes_Med_WMC,Classes_High_WMC,Classes_Critical_WMC,Checkstyle_Errors,PMD_Violations,Architecture_Smells,Design_Smells,Implementation_Smells,Phase,Refactoring
+2026-02-14 19:27:49,602,45955,23,184,17.48,10.0,48,6.9,5.0,64.19,18.4,1.52,308,196,56,42,30961,1736,0,0,0,snapshot,R1.2

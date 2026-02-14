@@ -1,0 +1,76 @@
+@startuml User_and_Role_Management_Subsystem_LLM
+
+' ============================================================
+' LLM-ASSISTED VERSION
+' User and Role Management Subsystem - Apache Roller
+' Generated using: Claude 3.5 Sonnet
+' Time taken: ~7 minutes
+' ============================================================
+
+interface UserManager {
+    + addUser(user: User): void
+    + getUser(id: String): User
+    + getUserByUserName(userName: String): User
+    + grantPermission(user: User, weblog: Weblog): void
+}
+
+class User {
+    - id: String
+    - userName: String
+    - password: String
+    - emailAddress: String
+    - enabled: Boolean
+    
+    + getId(): String
+    + getUserName(): String
+    + getEmailAddress(): String
+}
+
+class WeblogPermission {
+    - user: User
+    - weblog: Weblog
+    - actions: String
+    
+    + hasAction(action: String): boolean
+}
+
+class Weblog {
+    - id: String
+    - handle: String
+    - name: String
+}
+
+interface UserDetails {
+    + getUsername(): String
+    + getPassword(): String
+    + isEnabled(): boolean
+}
+
+class RollerUserDetails {
+    - user: User
+    
+    + getUsername(): String
+    + getPassword(): String
+    + isEnabled(): boolean
+}
+
+' Relationships
+User "1" -- "0..*" WeblogPermission
+WeblogPermission "1" -- "1" Weblog
+RollerUserDetails ..|> UserDetails
+RollerUserDetails --> User
+
+UserManager ..> User
+UserManager ..> WeblogPermission
+
+note top of UserManager
+  LLM captured basic CRUD operations
+  but missed permission workflow details
+end note
+
+note right of WeblogPermission
+  LLM used simple string for actions
+  Missed EDIT_DRAFT, POST, ADMIN constants
+end note
+
+@enduml
