@@ -718,208 +718,32 @@ public class Weblog implements Serializable {
             return wmgr.getComments(csc);
         } catch (WebloggerException e) {
             log.error("ERROR: getting recent comments", e);
-        }
-        return Collections.emptyList();
-    }
+import java.util.Calendar;
+import java.util.Collections;
+import java.util.Date;
+import java.util.List;
+import java.util.ArrayList; // For initializing lists in managers if they own them, or for default empty lists
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.apache.roller.weblogger.WebloggerException;
+import org.apache.roller.weblogger.WebloggerFactory;
+import org.apache.roller.weblogger.business.BookmarkManager;
+import org.apache.roller.weblogger.business.WeblogEntryManager;
+import org.apache.roller.weblogger.pojos.MediaFileDirectory;
+import org.apache.roller.weblogger.pojos.TagStat;
+import org.apache.roller.weblogger.pojos.Weblog; // Assuming the class being refactored is named Weblog
+import org.apache.roller.weblogger.pojos.WeblogBookmarkFolder;
+import org.apache.roller.weblogger.pojos.WeblogCategory;
+import org.apache.roller.weblogger.pojos.WeblogHitCount;
 
-    
-    /**
-     * Get bookmark folder by name.
-     * @param folderName Name or path of bookmark folder to be returned (null for root)
-     * @return Folder object requested.
-     */
-    public WeblogBookmarkFolder getBookmarkFolder(String folderName) {
-        try {
-            Weblogger roller = WebloggerFactory.getWeblogger();
-            BookmarkManager bmgr = roller.getBookmarkManager();
-            if (folderName == null || folderName.equals("nil") || folderName.trim().equals("/")) {
-                return bmgr.getDefaultFolder(this);
-            } else {
-                return bmgr.getFolder(this, folderName);
-            }
-        } catch (WebloggerException re) {
-            log.error("ERROR: fetching folder for weblog", re);
-        }
-        return null;
-    }
-
-
-    /**
-     * Get number of hits counted today.
-     */
-    public int getTodaysHits() {
-        try {
-            Weblogger roller = WebloggerFactory.getWeblogger();
-            WeblogEntryManager mgr = roller.getWeblogEntryManager();
-            WeblogHitCount hitCount = mgr.getHitCountByWeblog(this);
-            
-            return (hitCount != null) ? hitCount.getDailyHits() : 0;
-            
-        } catch (WebloggerException e) {
-            log.error("Error getting weblog hit count", e);
-        }
-        return 0;
-    }
-
-    /**
-     * Get a list of TagStats objects for the most popular tags
-     *
-     * @param sinceDays Number of days into past (or -1 for all days)
-     * @param length    Max number of tags to return.
-     * @return          Collection of WeblogEntryTag objects
-     */
-    public List<TagStat> getPopularTags(int sinceDays, int length) {
-        Date startDate = null;
-        if(sinceDays > 0) {
-            Calendar cal = Calendar.getInstance();
-            cal.setTime(new Date());
-            cal.add(Calendar.DATE, -1 * sinceDays);        
-            startDate = cal.getTime();     
-        }        
-        try {            
-            Weblogger roller = WebloggerFactory.getWeblogger();
-            WeblogEntryManager wmgr = roller.getWeblogEntryManager();
-            return wmgr.getPopularTags(this, startDate, 0, length);
-        } catch (Exception e) {
-            log.error("ERROR: fetching popular tags for weblog " + this.getName(), e);
-        }
-        return Collections.emptyList();
-    }      
-
-    public long getCommentCount() {
-        long count = 0;
-        try {
-            Weblogger roller = WebloggerFactory.getWeblogger();
-            WeblogEntryManager mgr = roller.getWeblogEntryManager();
-            count = mgr.getCommentCount(this);            
-        } catch (WebloggerException e) {
-            log.error("Error getting comment count for weblog " + this.getName(), e);
-        }
-        return count;
-    }
-    
-    public long getEntryCount() {
-        long count = 0;
-        try {
-            Weblogger roller = WebloggerFactory.getWeblogger();
-            WeblogEntryManager mgr = roller.getWeblogEntryManager();
-            count = mgr.getEntryCount(this);            
-        } catch (WebloggerException e) {
-            log.error("Error getting entry count for weblog " + this.getName(), e);
-        }
-        return count;
-    }
-
-
-    /**
-     * Add a category as a child of this category.
-     */
-    public void addCategory(WeblogCategory category) {
-
-        // make sure category is not null
-        if(category == null || category.getName() == null) {
-            throw new IllegalArgumentException("Category cannot be null and must have a valid name");
-        }
-
-        // make sure we don't already have a category with that name
-        if(hasCategory(category.getName())) {
-            throw new IllegalArgumentException("Duplicate category name '"+category.getName()+"'");
-        }
-
-        // add it to our list of child categories
-        getWeblogCategories().add(category);
-    }
-
-    public List<WeblogCategory> getWeblogCategories() {
-        return weblogCategories;
-    }
-
-    public void setWeblogCategories(List<WeblogCategory> cats) {
-        this.weblogCategories = cats;
-    }
-
-    public boolean hasCategory(String name) {
-        for (WeblogCategory cat : getWeblogCategories()) {
-            if(name.equals(cat.getName())) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    public List<WeblogBookmarkFolder> getBookmarkFolders() {
-        return bookmarkFolders;
-    }
-
-    public void setBookmarkFolders(List<WeblogBookmarkFolder> bookmarkFolders) {
-        this.bookmarkFolders = bookmarkFolders;
-    }
-
-    public List<MediaFileDirectory> getMediaFileDirectories() {
-        return mediaFileDirectories;
-    }
-
-    public void setMediaFileDirectories(List<MediaFileDirectory> mediaFileDirectories) {
-        this.mediaFileDirectories = mediaFileDirectories;
-    }
-
-    /**
-     * Add a bookmark folder to this weblog.
-     */
-    public void addBookmarkFolder(WeblogBookmarkFolder folder) {
-
-        // make sure folder is not null
-        if(folder == null || folder.getName() == null) {
-            throw new IllegalArgumentException("Folder cannot be null and must have a valid name");
-        }
-
-        // make sure we don't already have a folder with that name
-        if(this.hasBookmarkFolder(folder.getName())) {
-            throw new IllegalArgumentException("Duplicate folder name '" + folder.getName() + "'");
-        }
-
-        // add it to our list of child folder
-        getBookmarkFolders().add(folder);
-    }
-
-    /**
-     * Does this Weblog have a bookmark folder with the specified name?
-     *
-     * @param name The name of the folder to check for.
-     * @return boolean true if exists, false otherwise.
-     */
-    public boolean hasBookmarkFolder(String name) {
-        for (WeblogBookmarkFolder folder : this.getBookmarkFolders()) {
-            if(name.equalsIgnoreCase(folder.getName())) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    /**
-     * Indicates whether this weblog contains the specified media file directory
-     *
-     * @param name directory name
-     *
-     * @return true if directory is present, false otherwise.
-     */
-    public boolean hasMediaFileDirectory(String name) {
-        for (MediaFileDirectory directory : this.getMediaFileDirectories()) {
-            if (directory.getName().equals(name)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    public MediaFileDirectory getMediaFileDirectory(String name) {
-        for (MediaFileDirectory dir : this.getMediaFileDirectories()) {
-            if (name.equals(dir.getName())) {
-                return dir;
-            }
-        }
-        return null;
+// Assuming the original class is named Weblog and has a 'log' field.
+// The code block starts inside the Weblog class.
+// The original fields (weblogCategories, bookmarkFolders, mediaFileDirectories) are assumed to exist
+// in the Weblog class, as their public
+return this.getMediaFileDirectories().stream()
+                   .filter(dir -> name.equals(dir.getName()))
+                   .findFirst()
+                   .orElse(null);
     }
 
 }

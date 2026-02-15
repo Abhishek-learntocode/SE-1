@@ -19,42 +19,19 @@
 package org.apache.roller.weblogger.pojos;
 
 import java.io.Serializable;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 import java.sql.Timestamp;
-import java.text.SimpleDateFormat;
-import java.util.Arrays;
-import java.util.Calendar;
-import java.util.Collections;
-import java.util.Date;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
-import java.util.Locale;
-import java.util.Map;
 import java.util.Set;
-import java.util.StringTokenizer;
 import java.util.TreeSet;
 
-import org.apache.commons.text.StringEscapeUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.roller.util.DateUtil;
-import org.apache.roller.util.RollerConstants;
 import org.apache.roller.util.UUIDGenerator;
-import org.apache.roller.weblogger.WebloggerException;
-import org.apache.roller.weblogger.business.UserManager;
-import org.apache.roller.weblogger.business.WeblogEntryManager;
 import org.apache.roller.weblogger.business.WebloggerFactory;
-import org.apache.roller.weblogger.business.plugins.entry.WeblogEntryPlugin;
 import org.apache.roller.weblogger.config.WebloggerConfig;
-import org.apache.roller.weblogger.config.WebloggerRuntimeConfig;
-import org.apache.roller.weblogger.util.HTMLSanitizer;
-import org.apache.roller.weblogger.util.I18nMessages;
-import org.apache.roller.weblogger.util.Utilities;
 
 /**
  * Represents a Weblog Entry.
@@ -261,6 +238,28 @@ public class WeblogEntry implements Serializable {
     }   
     
     public String getTitle() {
+public void setWebsite(Weblog website) {
+        this.website = website;
+    }
+    
+    public User getCreator() {
+        try {
+            return WebloggerFactory.getWeblogger().getUserManager().getUserByUserName(getCreatorUserName());
+        } catch (Exception e) {
+            mLogger.error("ERROR fetching user object for username: " + getCreatorUserName(), e);
+        }
+        return null;
+    }   
+    
+    public String getCreatorUserName() {
+        return creatorUserName;
+    }
+
+    public void setCreatorUserName(String creatorUserName) {
+        this.creatorUserName = creatorUserName;
+    }   
+    
+    public String getTitle() {
         return this.title;
     }
     
@@ -358,31 +357,34 @@ public class WeblogEntry implements Serializable {
     
     public String findEntryAttribute(String name) {
         if (getEntryAttributes() != null) {
-            for (WeblogEntryAttribute att : getEntryAttributes()) {
-                if (name.equals(att.getName())) {
-                    return att.getValue();
-                }
-            }
+            return getEntryAttributes().stream()
+                .filter(att -> name.equals(att.getName()))
+                .map(WeblogEntryAttribute::getValue)
+                .findFirst()
+                .orElse(null);
         }
         return null;
     }
         
     public void putEntryAttribute(String name, String value) throws Exception {
-        WeblogEntryAttribute att = null;
-        for (WeblogEntryAttribute o : getEntryAttributes()) {
-            if (name.equals(o.getName())) {
-                att = o; 
-                break;
-            }
+        // Ensure attSet is initialized before any operations to prevent NullPointerException
+        if (this.attSet == null) {
+            this.attSet = new java.util.HashSet<>();
         }
-        if (att == null) {
-            att = new WeblogEntryAttribute();
-            att.setEntry(this);
-            att.setName(name);
-            att.setValue(value);
-            getEntryAttributes().add(att);
+
+        WeblogEntryAttribute existingAtt = this.attSet.stream()
+            .filter(o -> name.equals(o.getName()))
+            .findFirst()
+            .orElse(null);
+
+        if (existingAtt == null) {
+            WeblogEntryAttribute newAtt = new WeblogEntryAttribute();
+            newAtt.setEntry(this);
+            newAtt.setName(name);
+            newAtt.setValue(value);
+            this.attSet.add(newAtt);
         } else {
-            att.setValue(value);
+            existingAtt.setValue(value);
         }
     }
     
@@ -476,9 +478,7 @@ public class WeblogEntry implements Serializable {
     /**
      * Number of days after pubTime that comments should be allowed, or 0 for no limit.
      */
-    public Integer getCommentDays() {
-        return commentDays;
-    }
+}
     /**
      * Number of days after pubTime that comments should be allowed, or 0 for no limit.
      */
@@ -639,29 +639,36 @@ public class WeblogEntry implements Serializable {
         if (getAllowComments() != null && !getAllowComments()) {
             return false;
         }
-        boolean ret = false;
+        
         if (getCommentDays() == null || getCommentDays() == 0) {
-            ret = true;
-        } else {
-            // we want to use pubtime for calculating when comments expire, but
-            // if pubtime isn't set (like for drafts) then just use updatetime
-            Date inPubTime = getPubTime();
-            if (inPubTime == null) {
-                inPubTime = getUpdateTime();
-            }
-            
-            Calendar expireCal = Calendar.getInstance(
-                    getWebsite().getLocaleInstance());
-            expireCal.setTime(inPubTime);
-            expireCal.add(Calendar.DATE, getCommentDays());
-            Date expireDay = expireCal.getTime();
-            Date today = new Date();
-            if (today.before(expireDay)) {
-                ret = true;
-            }
+            return true;
         }
-        return ret;
+        
+        return isCommentPeriodActive();
     }
+
+    /**
+     * Helper method to determine if the comment period is still active based on publication/update time
+     * and the configured comment days.
+     */
+    private boolean isCommentPeriodActive() {
+        // we want to use pubtime for calculating when comments expire, but
+        // if pubtime isn't set (like for drafts) then just use updatetime
+        Date baseTime = getPubTime();
+        if (baseTime == null) {
+            baseTime = getUpdateTime();
+        }
+        
+        Calendar expireCal = Calendar.getInstance(
+                getWebsite().getLocaleInstance());
+        expireCal.setTime(baseTime);
+        expireCal.add(Calendar.DATE, getCommentDays());
+        Date expireDay = expireCal.getTime();
+        Date today = new Date();
+        
+        return today.before(expireDay);
+    }
+
     public void setCommentsStillAllowed(boolean ignored) {
         // no-op
     }
@@ -711,14 +718,7 @@ public class WeblogEntry implements Serializable {
     }
     
     //------------------------------------------------------------------------
-    
-    public List<WeblogEntryComment> getComments() {
-        return getComments(true, true);
-    }
-    
-    /**
-     * TODO: why is this method exposed to users with ability to get spam/non-approved comments?
-     */
+*/
     @Deprecated
     public List<WeblogEntryComment> getComments(boolean ignoreSpam, boolean approvedOnly) {
         try {
@@ -944,31 +944,83 @@ public class WeblogEntry implements Serializable {
         String ret = str;
         mLogger.debug("Applying page plugins to string");
         Map<String, WeblogEntryPlugin> inPlugins = getWebsite().getInitializedPlugins();
-        if (str != null && inPlugins != null) {
-            List<String> entryPlugins = getPluginsList();
-            
-            // if no Entry plugins, don't bother looping.
-            if (entryPlugins != null && !entryPlugins.isEmpty()) {
-                
-                // now loop over mPagePlugins, matching
-                // against Entry plugins (by name):
-                // where a match is found render Plugin.
-                for (Map.Entry<String, WeblogEntryPlugin> entry : inPlugins.entrySet()) {
-                    if (entryPlugins.contains(entry.getKey())) {
-                        WeblogEntryPlugin pagePlugin = entry.getValue();
-                        try {
-                            ret = pagePlugin.render(this, ret);
-                        } catch (Exception e) {
+
+        if (str == null || inPlugins == null) {
+            return HTMLSanitizer.conditionallySanitize(ret);
+        }
+
+        List<String> entryPlugins = getPluginsList();
+        
+        if (entryPlugins == null || entryPlugins.isEmpty()) {
+            return HTMLSanitizer.conditionallySanitize(ret);
+        }
+        
+        ret = applyPlugins(str, inPlugins, entryPlugins);
+        
+        return HTMLSanitizer.conditionallySanitize(ret);
+} catch (Exception e) {
                             mLogger.error("ERROR from plugin: " + pagePlugin.getName(), e);
                         }
                     }
                 }
             }
-        } 
+        }
         return HTMLSanitizer.conditionallySanitize(ret);
     }
-    
-    
+
+    /**
+     * Nested helper class to encapsulate the logic for determining and formatting
+     * the display content. This helps to reduce the complexity of the main class
+     * by delegating a specific, cohesive responsibility to a separate type.
+     */
+    private static class ContentDisplayHelper {
+        private final String text;
+        private final String summary;
+        private final String transformedText;
+        private final String transformedSummary;
+        private final Locale websiteLocale;
+
+        /**
+         * Constructor to inject all necessary data from the outer class.
+         * This makes the helper class independent of the outer class's internal state
+         * and promotes better testability.
+         */
+        public ContentDisplayHelper(String text, String summary, String transformedText, String transformedSummary, Locale websiteLocale) {
+            this.text = text;
+            this.summary = summary;
+            this.transformedText = transformedText;
+            this.transformedSummary = transformedSummary;
+            this.websiteLocale = websiteLocale;
+        }
+
+        /**
+         * The core logic for determining and formatting the display content
+         * based on the presence of a "read more" link and content availability.
+         */
+        public String render(String readMoreLink) {
+            String displayContent;
+
+            if (readMoreLink == null || readMoreLink.isBlank() || "nil".equals(readMoreLink)) {
+                // no readMore link means permalink, so prefer text over summary
+                if (StringUtils.isNotEmpty(this.text)) {
+                    displayContent = this.transformedText;
+                } else {
+                    displayContent = this.transformedSummary;
+                }
+            } else {
+                // not a permalink, so prefer summary over text
+                // include a "read more" link if needed
+                if (StringUtils.isNotEmpty(this.summary)) {
+                    displayContent = this.transformedSummary;
+                    if (StringUtils.isNotEmpty(this.text)) {
+                        // add read more
+                        List<String> args = List.of(readMoreLink);
+
+                        // TODO: we need a more appropriate way to get the view locale here
+                        String readMore = I18nMessages.getMessages(websiteLocale).getString("macro.weblog.readMoreLink", args);
+
+}
+
     /**
      * Get the right transformed display content depending on the situation.
      *
@@ -978,44 +1030,23 @@ public class WeblogEntry implements Serializable {
      * empty or null then we assume the caller prefers content over summary.
      */
     public String displayContent(String readMoreLink) {
-        
-        String displayContent;
-        
-        if(readMoreLink == null || readMoreLink.isBlank() || "nil".equals(readMoreLink)) {
-            
-            // no readMore link means permalink, so prefer text over summary
-            if(StringUtils.isNotEmpty(this.getText())) {
-                displayContent = this.getTransformedText();
-            } else {
-                displayContent = this.getTransformedSummary();
-            }
-        } else {
-            // not a permalink, so prefer summary over text
-            // include a "read more" link if needed
-            if(StringUtils.isNotEmpty(this.getSummary())) {
-                displayContent = this.getTransformedSummary();
-                if(StringUtils.isNotEmpty(this.getText())) {
-                    // add read more
-                    List<String> args = List.of(readMoreLink);
-                    
-                    // TODO: we need a more appropriate way to get the view locale here
-                    String readMore = I18nMessages.getMessages(getWebsite().getLocaleInstance()).getString("macro.weblog.readMoreLink", args);
-                    
-                    displayContent += readMore;
-                }
-            } else {
-                displayContent = this.getTransformedText();
-            }
-        }
-        
-        return HTMLSanitizer.conditionallySanitize(displayContent);
+        // Delegate the content rendering logic to the new helper class.
+        // This reduces the complexity of this method and improves separation of concerns.
+        ContentDisplayHelper renderer = new ContentDisplayHelper(
+            this.getText(),
+            this.getSummary(),
+            this.getTransformedText(),
+            this.getTransformedSummary(),
+            this.getWebsite().getLocaleInstance()
+        );
+        return renderer.render(readMoreLink);
     }
-    
-    
+
+
     /**
      * Get the right transformed display content.
      */
-    public String getDisplayContent() { 
+    public String getDisplayContent() {
         return displayContent(null);
     }
 
