@@ -19,42 +19,19 @@
 package org.apache.roller.weblogger.pojos;
 
 import java.io.Serializable;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 import java.sql.Timestamp;
-import java.text.SimpleDateFormat;
-import java.util.Arrays;
-import java.util.Calendar;
-import java.util.Collections;
-import java.util.Date;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
-import java.util.Locale;
-import java.util.Map;
 import java.util.Set;
-import java.util.StringTokenizer;
 import java.util.TreeSet;
 
-import org.apache.commons.text.StringEscapeUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.roller.util.DateUtil;
-import org.apache.roller.util.RollerConstants;
 import org.apache.roller.util.UUIDGenerator;
-import org.apache.roller.weblogger.WebloggerException;
-import org.apache.roller.weblogger.business.UserManager;
-import org.apache.roller.weblogger.business.WeblogEntryManager;
 import org.apache.roller.weblogger.business.WebloggerFactory;
-import org.apache.roller.weblogger.business.plugins.entry.WeblogEntryPlugin;
 import org.apache.roller.weblogger.config.WebloggerConfig;
-import org.apache.roller.weblogger.config.WebloggerRuntimeConfig;
-import org.apache.roller.weblogger.util.HTMLSanitizer;
-import org.apache.roller.weblogger.util.I18nMessages;
-import org.apache.roller.weblogger.util.Utilities;
 
 /**
  * Represents a Weblog Entry.
@@ -240,6 +217,28 @@ public class WeblogEntry implements Serializable {
     }
     
     public void setWebsite(Weblog website) {
+        this.website = website;
+    }
+    
+    public User getCreator() {
+        try {
+            return WebloggerFactory.getWeblogger().getUserManager().getUserByUserName(getCreatorUserName());
+        } catch (Exception e) {
+            mLogger.error("ERROR fetching user object for username: " + getCreatorUserName(), e);
+        }
+        return null;
+    }   
+    
+    public String getCreatorUserName() {
+        return creatorUserName;
+    }
+
+    public void setCreatorUserName(String creatorUserName) {
+        this.creatorUserName = creatorUserName;
+    }   
+    
+    public String getTitle() {
+public void setWebsite(Weblog website) {
         this.website = website;
     }
     
@@ -479,6 +478,7 @@ public class WeblogEntry implements Serializable {
     public Integer getCommentDays() {
         return commentDays;
     }
+}
     /**
      * Number of days after pubTime that comments should be allowed, or 0 for no limit.
      */
@@ -630,38 +630,60 @@ public class WeblogEntry implements Serializable {
      * site-wide configs.
      */
     public boolean getCommentsStillAllowed() {
+        // 1. Check site-wide comments enabled setting
         if (!WebloggerRuntimeConfig.getBooleanProperty("users.comments.enabled")) {
             return false;
         }
-        if (getWebsite().getAllowComments() != null && !getWebsite().getAllowComments()) {
+        // 2. Check website-level comments allowed setting (null-safe)
+        if (Boolean.FALSE.equals(getWebsite().getAllowComments())) {
             return false;
         }
-        if (getAllowComments() != null && !getAllowComments()) {
+        // 3. Check entry-level comments allowed setting (null-safe)
+        if (Boolean.FALSE.equals(getAllowComments())) {
             return false;
         }
-        boolean ret = false;
+
+        // 4. If commentDays is null or 0, comments are always allowed (no expiration)
         if (getCommentDays() == null || getCommentDays() == 0) {
-            ret = true;
-        } else {
-            // we want to use pubtime for calculating when comments expire, but
-            // if pubtime isn't set (like for drafts) then just use updatetime
-            Date inPubTime = getPubTime();
-            if (inPubTime == null) {
-                inPubTime = getUpdateTime();
-            }
-            
-            Calendar expireCal = Calendar.getInstance(
-                    getWebsite().getLocaleInstance());
-            expireCal.setTime(inPubTime);
-            expireCal.add(Calendar.DATE, getCommentDays());
-            Date expireDay = expireCal.getTime();
-            Date today = new Date();
-            if (today.before(expireDay)) {
-                ret = true;
-            }
+            return true;
         }
-        return ret;
+
+        // 5. Delegate to helper for expiration logic based on commentDays
+        return !isCommentPeriodExpired(getCommentDays(), getPubTime(), getUpdateTime(), getWebsite().getLocaleInstance());
     }
+
+    /**
+     * Helper method to determine if the comment period has expired.
+     * Returns true if comments are NOT allowed due to expiration, false otherwise.
+     */
+    private boolean isCommentPeriodExpired(Integer commentDays, Date pubTime, Date updateTime, Locale locale) {
+        // Determine the base time for expiration calculation: pubTime if available, else updateTime.
+        Date baseTime = pubTime;
+        if (baseTime == null) {
+            baseTime = updateTime;
+        }
+        
+        // If no valid base time (both pubTime and updateTime are null), comments cannot be allowed.
+        // The original code would have thrown an NPE here.
+        if (baseTime == null) {
+            return true; // Comments are considered expired/not allowed.
+        }
+
+        // Calculate the expiration date
+        Calendar expireCal = Calendar.getInstance(locale);
+        expireCal.setTime(baseTime);
+        expireCal.add(Calendar.DATE, commentDays);
+        Date expireDay = expireCal.getTime();
+        
+        // Get current date for comparison
+        Date today = new Date();
+        
+        // Original logic: comments are allowed if today.before(expireDay)
+        // So, comments are NOT allowed if !today.before(expireDay)
+        // This means comments are not allowed if today is on or after expireDay.
+        return !today.before(expireDay);
+    }
+
     public void setCommentsStillAllowed(boolean ignored) {
         // no-op
     }
@@ -674,51 +696,29 @@ public class WeblogEntry implements Serializable {
      * See java.text.SimpleDateFormat for more information on this format.
      *
      * @see java.text.SimpleDateFormat
-     * @return Publish time formatted according to pattern.
-     */
-    public String formatPubTime(String pattern) {
-        try {
-            SimpleDateFormat format = new SimpleDateFormat(pattern,
-                    this.getWebsite().getLocaleInstance());
-            
-            return format.format(getPubTime());
-        } catch (RuntimeException e) {
-            mLogger.error("Unexpected exception", e);
-        }
-        
-        return "ERROR: formatting date";
+     * @return Publish time formatted according to
+    @Deprecated
+    public String getPermaLink() {
+        String lAnchor = URLEncoder.encode(getAnchor(), StandardCharsets.UTF_8);
+        return "/" + getWebsite().getHandle() + "/entry/" + lAnchor;
     }
     
-    //------------------------------------------------------------------------
+    /**
+     * Get relative URL to comments page.
+     * @deprecated Use commentLink() instead
+     */
+    @Deprecated
+    public String getCommentsLink() {
+        return getPermaLink() + "#comments";
+    }
     
     /**
-     * Format the update time of this weblog entry using the specified pattern.
-     * See java.text.SimpleDateFormat for more information on this format.
+     * Return the Title of this post, or the first 255 characters of the
+     * entry's text.
      *
-     * @see java.text.SimpleDateFormat
-     * @return Update time formatted according to pattern.
+     * @return String
      */
-    public String formatUpdateTime(String pattern) {
-        try {
-            SimpleDateFormat format = new SimpleDateFormat(pattern);
-            
-            return format.format(getUpdateTime());
-        } catch (RuntimeException e) {
-            mLogger.error("Unexpected exception", e);
-        }
-        
-        return "ERROR: formatting date";
-    }
-    
-    //------------------------------------------------------------------------
-    
-    public List<WeblogEntryComment> getComments() {
-        return getComments(true, true);
-    }
-    
-    /**
-     * TODO: why is this method exposed to users with ability to get spam/non-approved comments?
-     */
+*/
     @Deprecated
     public List<WeblogEntryComment> getComments(boolean ignoreSpam, boolean approvedOnly) {
         try {
@@ -941,24 +941,24 @@ public class WeblogEntry implements Serializable {
      * Transform string based on plugins enabled for this weblog entry.
      */
     private String render(String str) {
-        String ret = str;
-        mLogger.debug("Applying page plugins to string");
+        if (str == null) {
+            return HTMLSanitizer.conditionallySanitize(str);
+        }
+
         Map<String, WeblogEntryPlugin> inPlugins = getWebsite().getInitializedPlugins();
-        if (str != null && inPlugins != null) {
-            List<String> entryPlugins = getPluginsList();
-            
-            // if no Entry plugins, don't bother looping.
-            if (entryPlugins != null && !entryPlugins.isEmpty()) {
-                
-                // now loop over mPagePlugins, matching
-                // against Entry plugins (by name):
-                // where a match is found render Plugin.
-                for (Map.Entry<String, WeblogEntryPlugin> entry : inPlugins.entrySet()) {
-                    if (entryPlugins.contains(entry.getKey())) {
-                        WeblogEntryPlugin pagePlugin = entry.getValue();
-                        try {
-                            ret = pagePlugin.render(this, ret);
-                        } catch (Exception e) {
+        if (inPlugins == null || inPlugins.isEmpty()) {
+            return HTMLSanitizer.conditionallySanitize(str);
+        }
+
+        List<String> entryPlugins = getPluginsList();
+        if (entryPlugins == null || entryPlugins.isEmpty()) {
+            return HTMLSanitizer.conditionallySanitize(str);
+        }
+
+        mLogger.debug("Applying page plugins to string");
+        String ret = applyEntryPlugins(str, inPlugins, entryPlugins);
+        
+} catch (Exception e) {
                             mLogger.error("ERROR from plugin: " + pagePlugin.getName(), e);
                         }
                     }
@@ -968,6 +968,59 @@ public class WeblogEntry implements Serializable {
         return HTMLSanitizer.conditionallySanitize(ret);
     }
     
+    /**
+     * Determines if the given readMoreLink indicates a permalink situation.
+     * A permalink means no "Read More" link should be displayed, and content should be preferred over summary.
+     * @param readMoreLink The link string to check.
+     * @return true if it's a permalink, false otherwise.
+     */
+    private boolean isPermalink(String readMoreLink) {
+        return readMoreLink == null || readMoreLink.isBlank() || "nil".equals(readMoreLink);
+    }
+
+    /**
+     * Creates the "Read More" link string using internationalized messages.
+     * @param readMoreLink The URL for the "Read More" link.
+     * @return The HTML string for the "Read More" link.
+     */
+    private String createReadMoreLink(String readMoreLink) {
+        List<String> args = List.of(readMoreLink);
+        // Assuming getWebsite() and getLocaleInstance() are methods/fields of the current class.
+        return I18nMessages.getMessages(getWebsite().getLocaleInstance()).getString("macro.weblog.readMoreLink", args);
+    }
+
+    /**
+     * Retrieves the preferred content when a permalink is indicated (no "Read More" link).
+     * Prefers transformed text over transformed summary.
+     * @return The transformed content string.
+     */
+    private String getPreferredContentForPermalink() {
+        if (StringUtils.isNotEmpty(this.getText())) {
+            return this.getTransformedText();
+        } else {
+            return this.getTransformedSummary();
+        }
+    }
+
+    /**
+     * Retrieves the preferred content when a "Read More" link is present.
+     * Prefers transformed summary, and appends a "Read More" link if transformed text also exists.
+     * Falls back to transformed text if no summary is available.
+     * @param readMoreLink The URL for the "Read More" link.
+     * @return The transformed content string, potentially with a "Read More" link appended.
+     */
+    private String getPreferredContentForSummaryWithLink(String readMoreLink) {
+        String content;
+        if (StringUtils.isNotEmpty(this.getSummary())) {
+            content = this.getTransformedSummary();
+            if (StringUtils.isNotEmpty(this.getText())) {
+                content += createReadMoreLink(readMoreLink);
+            }
+        } else {
+            content = this.getTransformedText();
+        }
+        return content;
+    }
     
     /**
      * Get the right transformed display content depending on the situation.
@@ -981,31 +1034,13 @@ public class WeblogEntry implements Serializable {
         
         String displayContent;
         
-        if(readMoreLink == null || readMoreLink.isBlank() || "nil".equals(readMoreLink)) {
-            
+        if (isPermalink(readMoreLink)) {
             // no readMore link means permalink, so prefer text over summary
-            if(StringUtils.isNotEmpty(this.getText())) {
-                displayContent = this.getTransformedText();
-            } else {
-                displayContent = this.getTransformedSummary();
-            }
+            displayContent = getPreferredContentForPermalink();
         } else {
             // not a permalink, so prefer summary over text
             // include a "read more" link if needed
-            if(StringUtils.isNotEmpty(this.getSummary())) {
-                displayContent = this.getTransformedSummary();
-                if(StringUtils.isNotEmpty(this.getText())) {
-                    // add read more
-                    List<String> args = List.of(readMoreLink);
-                    
-                    // TODO: we need a more appropriate way to get the view locale here
-                    String readMore = I18nMessages.getMessages(getWebsite().getLocaleInstance()).getString("macro.weblog.readMoreLink", args);
-                    
-                    displayContent += readMore;
-                }
-            } else {
-                displayContent = this.getTransformedText();
-            }
+            displayContent = getPreferredContentForSummaryWithLink(readMoreLink);
         }
         
         return HTMLSanitizer.conditionallySanitize(displayContent);
