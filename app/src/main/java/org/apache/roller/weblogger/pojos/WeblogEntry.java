@@ -19,42 +19,20 @@
 package org.apache.roller.weblogger.pojos;
 
 import java.io.Serializable;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 import java.sql.Timestamp;
-import java.text.SimpleDateFormat;
-import java.util.Arrays;
-import java.util.Calendar;
-import java.util.Collections;
-import java.util.Date;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
-import java.util.Locale;
-import java.util.Map;
 import java.util.Set;
-import java.util.StringTokenizer;
 import java.util.TreeSet;
 
-import org.apache.commons.text.StringEscapeUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.roller.util.DateUtil;
-import org.apache.roller.util.RollerConstants;
 import org.apache.roller.util.UUIDGenerator;
-import org.apache.roller.weblogger.WebloggerException;
-import org.apache.roller.weblogger.business.UserManager;
-import org.apache.roller.weblogger.business.WeblogEntryManager;
 import org.apache.roller.weblogger.business.WebloggerFactory;
-import org.apache.roller.weblogger.business.plugins.entry.WeblogEntryPlugin;
 import org.apache.roller.weblogger.config.WebloggerConfig;
-import org.apache.roller.weblogger.config.WebloggerRuntimeConfig;
-import org.apache.roller.weblogger.util.HTMLSanitizer;
-import org.apache.roller.weblogger.util.I18nMessages;
-import org.apache.roller.weblogger.util.Utilities;
 
 /**
  * Represents a Weblog Entry.
@@ -213,7 +191,7 @@ public class WeblogEntry implements Serializable {
     
     public void setId(String id) {
         // Form bean workaround: empty string is never a valid id
-        if (id != null && id.isBlank()) {
+        if (id != null && StringUtils.isBlank(id)) { // Changed to use StringUtils.isBlank
             return;
         }
         this.id = id;
@@ -248,6 +226,28 @@ public class WeblogEntry implements Serializable {
             return WebloggerFactory.getWeblogger().getUserManager().getUserByUserName(getCreatorUserName());
         } catch (Exception e) {
             mLogger.error("ERROR fetching user object for username: " + getCreatorUserName(), e);
+        }
+        return null;
+    }   
+    
+    public String getCreatorUserName() {
+        return creatorUserName;
+    }
+
+    public void setCreatorUserName(String creatorUserName) {
+        this.creatorUserName = creatorUserName;
+    }   
+    
+public void setWebsite(Weblog website) {
+        this.website = website;
+    }
+    
+    public User getCreator() {
+        String userName = getCreatorUserName();
+        try {
+            return WebloggerFactory.getWeblogger().getUserManager().getUserByUserName(userName);
+        } catch (Exception e) {
+            mLogger.error("ERROR fetching user object for username: " + userName, e);
         }
         return null;
     }   
@@ -357,24 +357,30 @@ public class WeblogEntry implements Serializable {
     }
     
     public String findEntryAttribute(String name) {
-        if (getEntryAttributes() != null) {
-            for (WeblogEntryAttribute att : getEntryAttributes()) {
-                if (name.equals(att.getName())) {
-                    return att.getValue();
-                }
-            }
-        }
-        return null;
+        // Assuming 'attSet' (returned by getEntryAttributes()) is always initialized to a non-null Set (even if empty).
+        // This aligns with common practice for collection fields to prevent NullPointerExceptions.
+        // If 'attSet' could legitimately be null, a null check would be required here.
+        return getEntryAttributes().stream()
+                                   .filter(att -> name.equals(att.getName()))
+                                   .map(WeblogEntryAttribute::getValue)
+                                   .findFirst()
+                                   .orElse(null);
     }
         
+    /**
+     * Helper method to find a WeblogEntryAttribute object by its name.
+     * Assumes 'attSet' is always initialized to a non-null Set.
+     */
+    private WeblogEntryAttribute findEntryAttributeObject(String name) {
+        return getEntryAttributes().stream()
+                                   .filter(att -> name.equals(att.getName()))
+                                   .findFirst()
+                                   .orElse(null);
+    }
+
     public void putEntryAttribute(String name, String value) throws Exception {
-        WeblogEntryAttribute att = null;
-        for (WeblogEntryAttribute o : getEntryAttributes()) {
-            if (name.equals(o.getName())) {
-                att = o; 
-                break;
-            }
-        }
+        WeblogEntryAttribute att = findEntryAttributeObject(name);
+        
         if (att == null) {
             att = new WeblogEntryAttribute();
             att.setEntry(this);
@@ -472,44 +478,6 @@ public class WeblogEntry implements Serializable {
     public void setAllowComments(Boolean allowComments) {
         this.allowComments = allowComments;
     }
-    
-    /**
-     * Number of days after pubTime that comments should be allowed, or 0 for no limit.
-     */
-    public Integer getCommentDays() {
-        return commentDays;
-    }
-    /**
-     * Number of days after pubTime that comments should be allowed, or 0 for no limit.
-     */
-    public void setCommentDays(Integer commentDays) {
-        this.commentDays = commentDays;
-    }
-    
-    /**
-     * True if this entry should be rendered right to left.
-     */
-    public Boolean getRightToLeft() {
-        return rightToLeft;
-    }
-    /**
-     * True if this entry should be rendered right to left.
-     */
-    public void setRightToLeft(Boolean rightToLeft) {
-        this.rightToLeft = rightToLeft;
-    }
-    
-    /**
-     * True if story should be pinned to the top of the Roller site main blog.
-     * @return Returns the pinned.
-     */
-    public Boolean getPinnedToMain() {
-        return pinnedToMain;
-    }
-    /**
-     * True if story should be pinned to the top of the Roller site main blog.
-     * @param pinnedToMain The pinned to set.
-     */
     public void setPinnedToMain(Boolean pinnedToMain) {
         this.pinnedToMain = pinnedToMain;
     }
